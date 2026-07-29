@@ -1,0 +1,26 @@
+# Dependencies and build output
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Environment and local Supabase state
+.env
+.env.*
+!.env.example
+.supabase/
+supabase/.temp/
+
+# Confidential workbooks and Excel lock files
+*.xlsx
+*.xls
+~$*
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
