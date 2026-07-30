@@ -96,10 +96,20 @@ export async function fetchContacts(): Promise<ContactPerson[]> {
   if (!session) return [];
   const { data, error } = await supabase
     .from("contact_people")
+    .select(
+      "id, display_name, normalized_name, outreach_sent_at, outreach_sent_by",
+    )
+    .order("display_name");
+  if (!error) return (data ?? []) as ContactPerson[];
+
+  // Yeni migration henüz production'a uygulanmadıysa isim listesi çalışmaya
+  // devam eder; durum değiştirme işlemi kullanıcıya migration hatasını gösterir.
+  const { data: fallbackData, error: fallbackError } = await supabase
+    .from("contact_people")
     .select("id, display_name, normalized_name")
     .order("display_name");
-  if (error) throw error;
-  return (data ?? []) as ContactPerson[];
+  if (fallbackError) throw fallbackError;
+  return (fallbackData ?? []) as ContactPerson[];
 }
 
 export async function fetchProfile(): Promise<Profile> {

@@ -5,6 +5,8 @@ export interface ContactPerson {
   id: string;
   display_name: string;
   normalized_name: string;
+  outreach_sent_at?: string | null;
+  outreach_sent_by?: string | null;
 }
 
 export interface RecordContact {

@@ -9,7 +9,7 @@ export default async function ContactsPage() {
       <div className="mb-5">
         <h1 className="text-2xl font-bold">Temas sorumluları</h1>
         <p className="text-sm text-muted-foreground">
-          Profilini açmak istediğiniz temas sorumlusunu seçin.
+          İletişim paketlerini takip edin veya kişinin profilini açın.
         </p>
       </div>
       <ContactsOverview />
