@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import process from "node:process";
-import XLSX from "xlsx";
+import XLSX from "xlsx-js-style";
 
 const expectedHeaders = [
   "Sıra",

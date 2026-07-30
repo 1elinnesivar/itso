@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import { contactsForRecord } from "@/lib/records";
 import { normalizeLineEndings, normalizeText } from "@/lib/utils";
 import type { FurnitureRecord, RecordPayload, RowColor } from "@/types/app";
@@ -61,10 +61,10 @@ export function recordToExcelRow(record: FurnitureRecord) {
     Yetkililer: record.officials ?? "",
     KÖKEN: record.origin ?? "",
     "OY DURUMU": record.vote_status ?? "",
-    "TEMAS 1": contacts[0],
-    "TEMAS 2": contacts[1],
-    "TEMAS 3": contacts[2],
-    "TEMAS 4": contacts[3],
+    "TEMAS 1": contacts[0] ?? "",
+    "TEMAS 2": contacts[1] ?? "",
+    "TEMAS 3": contacts[2] ?? "",
+    "TEMAS 4": contacts[3] ?? "",
     ...Object.fromEntries(
       contacts.slice(4).map((contact, index) => [`TEMAS ${index + 5}`, contact]),
     ),
@@ -76,7 +76,30 @@ export function recordToExcelRow(record: FurnitureRecord) {
   };
 }
 
-export function exportRecords(records: FurnitureRecord[], prefix = "mobilya-takip") {
+const thinBorder = {
+  top: { style: "thin", color: { rgb: "000000" } },
+  bottom: { style: "thin", color: { rgb: "000000" } },
+  left: { style: "thin", color: { rgb: "000000" } },
+  right: { style: "thin", color: { rgb: "000000" } },
+} as const;
+
+const sourceColumnWidths = [
+  6.5, 7.79, 8.07, 13.07, 8.79, 33.07, 32.79, 11.5, 33.07,
+] as const;
+
+const trailingColumnWidths = [51.64, 19.64, 19.93, 36.64, 33.5] as const;
+
+function estimatedLineCount(value: unknown, width: number) {
+  const charactersPerLine = Math.max(4, Math.floor(width * 0.85));
+  return String(value ?? "")
+    .split("\n")
+    .reduce(
+      (total, line) => total + Math.max(1, Math.ceil(line.length / charactersPerLine)),
+      0,
+    );
+}
+
+export function createRecordsWorkbook(records: FurnitureRecord[]) {
   const contactCount = Math.max(
     4,
     ...records.map((record) => record.record_contacts.length),
@@ -86,13 +109,12 @@ export function exportRecords(records: FurnitureRecord[], prefix = "mobilya-taki
     ...Array.from({ length: contactCount }, (_, index) => `TEMAS ${index + 1}`),
     ...EXCEL_HEADERS.slice(13),
   ];
-  const sheet = XLSX.utils.json_to_sheet(records.map(recordToExcelRow), {
-    header: headers,
-  });
+  const rows = records.map(recordToExcelRow);
+  const sheet = XLSX.utils.json_to_sheet(rows, { header: headers });
   sheet["!cols"] = [
-    7, 12, 15, 28, 10, 55, 28, 15, 15,
-    ...Array.from({ length: contactCount }, () => 20),
-    48, 22, 25, 55, 45,
+    ...sourceColumnWidths,
+    ...Array.from({ length: contactCount }, () => 14.93),
+    ...trailingColumnWidths,
   ].map((wch) => ({ wch }));
   sheet["!autofilter"] = {
     ref: XLSX.utils.encode_range({
@@ -100,34 +122,79 @@ export function exportRecords(records: FurnitureRecord[], prefix = "mobilya-taki
       e: { r: records.length, c: headers.length - 1 },
     }),
   };
-  for (let row = 1; row <= records.length; row += 1) {
-    const rowColor = records[row - 1].row_color;
-    if (rowColor) {
-      for (let column = 0; column < headers.length; column += 1) {
-        const address = XLSX.utils.encode_cell({ r: row, c: column });
-        if (sheet[address]) {
-          sheet[address].s = {
-            ...(sheet[address].s ?? {}),
-            fill: {
-              patternType: "solid",
-              fgColor: { rgb: rowColorToRgb[rowColor] },
-            },
-          };
-        }
-      }
-    }
-    for (const column of [9 + contactCount, 13 + contactCount]) {
-      const address = XLSX.utils.encode_cell({ r: row, c: column });
-      if (sheet[address]) {
-        sheet[address].s = {
-          ...(sheet[address].s ?? {}),
-          alignment: { wrapText: true, vertical: "top" },
-        };
-      }
-    }
+  sheet["!rows"] = [{ hpt: 25.5 }];
+
+  for (let column = 0; column < headers.length; column += 1) {
+    const address = XLSX.utils.encode_cell({ r: 0, c: column });
+    sheet[address].s = {
+      font: { name: "Arial", sz: 10, bold: true, color: { rgb: "000000" } },
+      fill: { patternType: "solid", fgColor: { rgb: "C0C0C0" } },
+      alignment: {
+        horizontal: "center",
+        vertical: "center",
+        wrapText: true,
+      },
+      border: thinBorder,
+    };
   }
+
+  for (let row = 1; row <= records.length; row += 1) {
+    const record = records[row - 1];
+    const rowValues = rows[row - 1] as Record<string, unknown>;
+    let maxLines = 1;
+
+    for (let column = 0; column < headers.length; column += 1) {
+      const address = XLSX.utils.encode_cell({ r: row, c: column });
+      if (!sheet[address]) sheet[address] = { t: "s", v: "" };
+
+      const width =
+        column < sourceColumnWidths.length
+          ? sourceColumnWidths[column]
+          : column < sourceColumnWidths.length + contactCount
+            ? 14.93
+            : trailingColumnWidths[
+                column - sourceColumnWidths.length - contactCount
+              ];
+      maxLines = Math.max(
+        maxLines,
+        estimatedLineCount(rowValues[headers[column]], width),
+      );
+
+      sheet[address].s = {
+        font: { name: "Arial", sz: 10, color: { rgb: "000000" } },
+        alignment: {
+          horizontal: column <= 4 ? "center" : "left",
+          vertical: "center",
+          wrapText: true,
+        },
+        border: thinBorder,
+        ...(record.row_color
+          ? {
+              fill: {
+                patternType: "solid",
+                fgColor: { rgb: rowColorToRgb[record.row_color] },
+              },
+            }
+          : {}),
+      };
+    }
+
+    sheet["!rows"][row] = {
+      hpt: Math.min(127.5, Math.max(25.5, maxLines * 17 + 8)),
+    };
+  }
+
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, sheet, "MOBİLYA TOP. VE PERAKENDE");
+  XLSX.utils.book_append_sheet(
+    workbook,
+    sheet,
+    "MOBİLYA TOP. VE PERAKENDE",
+  );
+  return workbook;
+}
+
+export function exportRecords(records: FurnitureRecord[], prefix = "mobilya-takip") {
+  const workbook = createRecordsWorkbook(records);
   const stamp = new Intl.DateTimeFormat("tr-TR", {
     year: "numeric",
     month: "2-digit",

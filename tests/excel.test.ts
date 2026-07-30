@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import {
+  createRecordsWorkbook,
   EXCEL_HEADERS,
   parseWorkbook,
   readRowColor,
@@ -114,6 +115,31 @@ describe("Excel eşleştirmesi", () => {
       "SORUMLU 4",
       "SORUMLU 5",
     ]);
+  });
+
+  it("başlık tasarımını, kenarlıkları ve satır rengini XLSX dosyasına yazar", () => {
+    const workbook = createRecordsWorkbook([record]);
+    const sourceSheet = workbook.Sheets["MOBİLYA TOP. VE PERAKENDE"];
+
+    expect(sourceSheet.A1.s.fill.fgColor.rgb).toBe("C0C0C0");
+    expect(sourceSheet.A1.s.font.bold).toBe(true);
+    expect(sourceSheet.A1.s.border.bottom.style).toBe("thin");
+    expect(sourceSheet.A2.s.fill.fgColor.rgb).toBe("FFFF00");
+    expect(sourceSheet["!cols"]?.[5].wch).toBe(33.07);
+
+    const buffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+      cellStyles: true,
+    }) as ArrayBuffer;
+    const writtenWorkbook = XLSX.read(buffer, {
+      type: "array",
+      cellStyles: true,
+    });
+    const writtenSheet = writtenWorkbook.Sheets["MOBİLYA TOP. VE PERAKENDE"];
+
+    expect(writtenSheet.A1.s.fgColor.rgb).toBe("C0C0C0");
+    expect(writtenSheet.A2.s.fgColor.rgb).toBe("FFFF00");
   });
 
   it("Excel satır dolgu rengini sınıflandırır", () => {
