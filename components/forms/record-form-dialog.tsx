@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Check, Loader2, Plus, Search, X } from "lucide-react";
+import { AlertTriangle, Check, Loader2, Pencil, Plus, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -82,6 +82,7 @@ function ContactCombobox({
   placeholder,
   disabled,
   onChange,
+  onEdit,
 }: {
   contacts: ContactPerson[];
   selectedId: string;
@@ -89,6 +90,7 @@ function ContactCombobox({
   placeholder: string;
   disabled: boolean;
   onChange: (id: string) => void;
+  onEdit: (contact: ContactPerson) => void;
 }) {
   const selected = contacts.find((contact) => contact.id === selectedId);
   const [query, setQuery] = useState(selected?.display_name ?? "");
@@ -114,7 +116,7 @@ function ContactCombobox({
     <div className="relative">
       <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
       <Input
-        className="pl-9 pr-9"
+        className={selectedId && !disabled ? "pl-9 pr-20" : "pl-9"}
         value={query}
         disabled={disabled}
         role="combobox"
@@ -129,18 +131,29 @@ function ContactCombobox({
         }}
       />
       {selectedId && !disabled && (
-        <button
-          type="button"
-          className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded hover:bg-muted"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => {
-            onChange("");
-            setQuery("");
-          }}
-          aria-label={`${placeholder} seçimini temizle`}
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <div className="absolute right-1 top-1 flex">
+          <button
+            type="button"
+            className="flex h-8 w-8 items-center justify-center rounded hover:bg-muted"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => selected && onEdit(selected)}
+            aria-label={`${selected?.display_name ?? placeholder} adını düzenle`}
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="flex h-8 w-8 items-center justify-center rounded hover:bg-muted"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              onChange("");
+              setQuery("");
+            }}
+            aria-label={`${placeholder} seçimini temizle`}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       )}
       {open && !disabled && (
         <div
@@ -148,22 +161,35 @@ function ContactCombobox({
           className="absolute z-40 mt-1 max-h-64 w-full overflow-y-auto rounded-md border bg-background p-1 shadow-lg"
         >
           {results.map((contact) => (
-            <button
-              key={contact.id}
-              type="button"
-              role="option"
-              aria-selected={contact.id === selectedId}
-              className="flex min-h-10 w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted"
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => {
-                onChange(contact.id);
-                setQuery(contact.display_name);
-                setOpen(false);
-              }}
-            >
-              <span className="flex-1">{contact.display_name}</span>
-              {contact.id === selectedId && <Check className="h-4 w-4 text-primary" />}
-            </button>
+            <div key={contact.id} className="flex items-center rounded hover:bg-muted">
+              <button
+                type="button"
+                role="option"
+                aria-selected={contact.id === selectedId}
+                className="flex min-h-10 flex-1 items-center px-3 py-2 text-left text-sm"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  onChange(contact.id);
+                  setQuery(contact.display_name);
+                  setOpen(false);
+                }}
+              >
+                <span className="flex-1">{contact.display_name}</span>
+                {contact.id === selectedId && <Check className="h-4 w-4 text-primary" />}
+              </button>
+              <button
+                type="button"
+                className="mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded hover:bg-background"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setOpen(false);
+                  onEdit(contact);
+                }}
+                aria-label={`${contact.display_name} adını düzenle`}
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            </div>
           ))}
           {!results.length && (
             <p className="px-3 py-4 text-center text-sm text-muted-foreground">
@@ -195,6 +221,9 @@ export function RecordFormDialog({
   const [contactSlotCount, setContactSlotCount] = useState(4);
   const [newContact, setNewContact] = useState("");
   const [addingContact, setAddingContact] = useState(false);
+  const [editingContact, setEditingContact] = useState<ContactPerson | null>(null);
+  const [editingContactName, setEditingContactName] = useState("");
+  const [renamingContact, setRenamingContact] = useState(false);
   const [initialVersion, setInitialVersion] = useState<number | null>(null);
   const [conflict, setConflict] = useState(false);
   const form = useForm<RecordFormValues, unknown, RecordParsedValues>({
@@ -244,6 +273,38 @@ export function RecordFormDialog({
     setNewContact("");
   }
 
+  function openContactEditor(contact: ContactPerson) {
+    setEditingContact(contact);
+    setEditingContactName(contact.display_name);
+  }
+
+  async function renameContact() {
+    if (!editingContact || !editingContactName.trim()) return;
+    setRenamingContact(true);
+    const { error } = await createClient().rpc("rename_contact_person", {
+      p_id: editingContact.id,
+      p_expected_name: editingContact.display_name,
+      p_display_name: editingContactName,
+    });
+    setRenamingContact(false);
+    if (error) {
+      toast.error(
+        error.code === "23505"
+          ? "Bu adla kayıtlı başka bir temas sorumlusu var."
+          : error.code === "40001"
+              ? "Bu isim başka bir kullanıcı tarafından değiştirildi. Listeyi yenileyip tekrar deneyin."
+              : "Temas sorumlusunun adı güncellenemedi.",
+      );
+      return;
+    }
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["contacts"] }),
+      queryClient.invalidateQueries({ queryKey: ["records"] }),
+    ]);
+    toast.success("Temas sorumlusunun adı güncellendi.");
+    setEditingContact(null);
+  }
+
   async function save(values: RecordParsedValues) {
     if (!editable) return;
     if (new Set(contactIds).size !== contactIds.length) {
@@ -282,8 +343,9 @@ export function RecordFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
         <DialogHeader>
           <DialogTitle>{record ? (editable ? "Kaydı düzenle" : "Kayıt ayrıntısı") : "Yeni kayıt"}</DialogTitle>
           <DialogDescription>
@@ -350,6 +412,7 @@ export function RecordFormDialog({
                     disabledIds={contactIds}
                     placeholder={`TEMAS ${index + 1}`}
                     disabled={!editable}
+                    onEdit={openContactEditor}
                     onChange={(contactId) => {
                       const next = [...contactIds];
                       if (contactId) next[index] = contactId;
@@ -389,7 +452,48 @@ export function RecordFormDialog({
             )}
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={Boolean(editingContact)}
+        onOpenChange={(nextOpen) => !nextOpen && setEditingContact(null)}
+      >
+        <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Temas sorumlusunun adını düzenle</DialogTitle>
+          <DialogDescription>
+            Bu değişiklik, kişinin bağlı olduğu bütün kayıtlarda uygulanır.
+          </DialogDescription>
+        </DialogHeader>
+        <label className="space-y-1.5 text-sm font-medium">
+          Ad soyad
+          <Input
+            value={editingContactName}
+            onChange={(event) => setEditingContactName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void renameContact();
+              }
+            }}
+            autoFocus
+          />
+        </label>
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={() => setEditingContact(null)}>
+            Vazgeç
+          </Button>
+          <Button
+            type="button"
+            onClick={() => void renameContact()}
+            disabled={renamingContact || !editingContactName.trim()}
+          >
+            {renamingContact && <Loader2 className="h-4 w-4 animate-spin" />}
+            Adı güncelle
+          </Button>
+        </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
