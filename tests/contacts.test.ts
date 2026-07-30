@@ -37,7 +37,7 @@ describe("Temas sorumlusu PDF çıktısı", () => {
       "NEDİM İNCEBAY",
       [record],
     );
-    const table = (definition.content as Array<Record<string, any>>)[3].table;
+    const table = (definition.content as Array<Record<string, any>>)[2].table;
     const headers = table.body[0].map((cell: { text: string }) => cell.text);
 
     expect(headers).toEqual([
@@ -58,5 +58,6 @@ describe("Temas sorumlusu PDF çıktısı", () => {
       "Örnek Mahallesi No: 1",
       "0224 000 00 00",
     ]);
+    expect(JSON.stringify(definition)).not.toContain("İTSO Mobilya Takip");
   });
 });

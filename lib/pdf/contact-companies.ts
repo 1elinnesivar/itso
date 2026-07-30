@@ -23,7 +23,6 @@ export function createContactCompaniesPdfDefinition(
       subject: "Temas sorumlusu firma listesi",
     },
     content: [
-      { text: "İTSO Mobilya Takip", style: "eyebrow" },
       { text: contactName, style: "title" },
       {
         text: `${records.length} firma · ${new Intl.DateTimeFormat("tr-TR", {
@@ -62,15 +61,10 @@ export function createContactCompaniesPdfDefinition(
     ],
     footer: (currentPage, pageCount) => ({
       margin: [28, 8, 28, 0],
-      columns: [
-        { text: "İTSO Mobilya Takip", color: "#64748b", fontSize: 8 },
-        {
-          text: `${currentPage} / ${pageCount}`,
-          alignment: "right",
-          color: "#64748b",
-          fontSize: 8,
-        },
-      ],
+      text: `${currentPage} / ${pageCount}`,
+      alignment: "right",
+      color: "#64748b",
+      fontSize: 8,
     }),
     defaultStyle: {
       font: "Roboto",
@@ -78,11 +72,6 @@ export function createContactCompaniesPdfDefinition(
       color: "#172033",
     },
     styles: {
-      eyebrow: {
-        color: "#167451",
-        bold: true,
-        fontSize: 9,
-      },
       title: {
         bold: true,
         fontSize: 18,
