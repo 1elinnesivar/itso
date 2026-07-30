@@ -121,25 +121,59 @@ export function ContactProfile({ contactId }: { contactId: string }) {
       ? [storedWhatsAppNumber.data]
       : [];
 
-  function openWhatsApp(number: string) {
-    const url = createWhatsAppUrl(number);
-    if (!url) {
+  async function copyNumber(number: string) {
+    try {
+      await navigator.clipboard.writeText(number);
+    } catch {
+      const input = document.createElement("textarea");
+      input.value = number;
+      input.style.position = "fixed";
+      input.style.opacity = "0";
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      input.remove();
+    }
+  }
+
+  function prepareWhatsAppPackage(number: string) {
+    const normalized = normalizeWhatsAppNumber(number);
+    const url = normalized ? createWhatsAppUrl(normalized) : null;
+    if (!normalized || !url) {
       toast.error("Geçerli bir WhatsApp numarası girin.");
       return false;
     }
+
     window.open(url, "_blank", "noopener,noreferrer");
+    void copyNumber(normalized);
+    setDownloading(true);
+    void downloadContactCompaniesPdf(contactDetails.name, companies)
+      .then(() => {
+        toast.success(
+          "Mesaj hazırlandı, PDF indirildi ve numara panoya kopyalandı.",
+        );
+      })
+      .catch(() => {
+        toast.error("WhatsApp açıldı ancak PDF indirilemedi.");
+      })
+      .finally(() => setDownloading(false));
     return true;
   }
 
   function startWhatsApp() {
-    if (effectiveWhatsAppNumber && openWhatsApp(effectiveWhatsAppNumber)) return;
+    if (
+      effectiveWhatsAppNumber &&
+      prepareWhatsAppPackage(effectiveWhatsAppNumber)
+    ) {
+      return;
+    }
     setPhoneInput("");
     setPhoneDialogOpen(true);
   }
 
   async function savePhoneAndOpenWhatsApp() {
     const normalized = normalizeWhatsAppNumber(phoneInput);
-    if (!normalized || !openWhatsApp(normalized)) return;
+    if (!normalized || !prepareWhatsAppPackage(normalized)) return;
 
     setPhoneDialogOpen(false);
     setSavingPhone(true);
@@ -233,19 +267,23 @@ export function ContactProfile({ contactId }: { contactId: string }) {
             </p>
           )}
           <p className="mt-2 text-xs text-muted-foreground">
-            WhatsApp gönderimi ve gönderildi/gönderilmedi takibi sonraki aşamada
-            bu profil üzerinden yönetilecek.
+            Mesaj WhatsApp’ta hazır olarak açılır; gönderme işlemini siz
+            onaylarsınız. Firma PDF’i indirilir ve numara panoya kopyalanır.
           </p>
         </div>
         <Button
           variant="outline"
           onClick={startWhatsApp}
-          disabled={savingPhone}
+          disabled={savingPhone || downloading}
         >
-          <MessageCircle className="h-4 w-4" />
+          {downloading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <MessageCircle className="h-4 w-4" />
+          )}
           {effectiveWhatsAppNumber
-            ? "WhatsApp ile iletişime geç"
-            : "Numara ekle ve WhatsApp aç"}
+            ? "WhatsApp paketini hazırla"
+            : "Numara ekle ve paketi hazırla"}
         </Button>
       </section>
 
@@ -336,8 +374,8 @@ export function ContactProfile({ contactId }: { contactId: string }) {
           <DialogHeader>
             <DialogTitle>WhatsApp numarası ekle</DialogTitle>
             <DialogDescription>
-              Numara bu temas profiline kaydedilecek ve hazırlanan mesajla
-              WhatsApp açılacak.
+              Numara profile kaydedilecek; mesaj ekranı açılacak, firma PDF’i
+              indirilecek ve numara panoya kopyalanacak.
             </DialogDescription>
           </DialogHeader>
           <label className="space-y-1.5 text-sm font-medium">
@@ -367,10 +405,12 @@ export function ContactProfile({ contactId }: { contactId: string }) {
             <Button
               type="button"
               onClick={() => void savePhoneAndOpenWhatsApp()}
-              disabled={!phoneInput.trim() || savingPhone}
+              disabled={!phoneInput.trim() || savingPhone || downloading}
             >
-              {savingPhone && <Loader2 className="h-4 w-4 animate-spin" />}
-              Kaydet ve WhatsApp aç
+              {(savingPhone || downloading) && (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              )}
+              Kaydet ve paketi hazırla
             </Button>
           </div>
         </DialogContent>

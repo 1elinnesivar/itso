@@ -20,6 +20,7 @@ describe("WhatsApp iletişimi", () => {
     expect(parsed.hostname).toBe("wa.me");
     expect(parsed.pathname).toBe("/905321234567");
     expect(parsed.searchParams.get("text")).toBe(CONTACT_WHATSAPP_MESSAGE);
+    expect(parsed.searchParams.has("send")).toBe(false);
     expect(CONTACT_WHATSAPP_MESSAGE).toContain("Alican Yavaş\nMobilyamevime");
   });
 
