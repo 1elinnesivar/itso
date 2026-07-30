@@ -77,6 +77,45 @@ describe("Excel eşleştirmesi", () => {
     expect(parsed[0].row_color).toBeNull();
   });
 
+  it("TEMAS 5 ve sonraki sütunları yeniden içe aktarır", async () => {
+    const extendedRecord: FurnitureRecord = {
+      ...record,
+      record_contacts: Array.from({ length: 5 }, (_, index) => ({
+        position: index + 1,
+        contact_person_id: `00000000-0000-0000-0000-00000000000${index + 2}`,
+        contact_people: {
+          id: `00000000-0000-0000-0000-00000000000${index + 2}`,
+          display_name: `SORUMLU ${index + 1}`,
+          normalized_name: `sorumlu ${index + 1}`,
+        },
+      })),
+    };
+    const excelRow = recordToExcelRow(extendedRecord);
+    const headers = [
+      ...EXCEL_HEADERS.slice(0, 13),
+      "TEMAS 5",
+      ...EXCEL_HEADERS.slice(13),
+    ];
+    const sheet = XLSX.utils.json_to_sheet([excelRow], { header: headers });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, "MOBİLYA TOP. VE PERAKENDE");
+    const buffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    }) as ArrayBuffer;
+    const file = { arrayBuffer: async () => buffer } as File;
+    const parsed = await parseWorkbook(file);
+
+    expect((excelRow as Record<string, unknown>)["TEMAS 5"]).toBe("SORUMLU 5");
+    expect(parsed[0].contact_names).toEqual([
+      "SORUMLU 1",
+      "SORUMLU 2",
+      "SORUMLU 3",
+      "SORUMLU 4",
+      "SORUMLU 5",
+    ]);
+  });
+
   it("Excel satır dolgu rengini sınıflandırır", () => {
     const sheet = {
       A2: {

@@ -221,6 +221,16 @@ export function RecordsTable({
   const [selected, setSelected] = useState<FurnitureRecord | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [coloringId, setColoringId] = useState<string | null>(null);
+  const contactColumnCount = useMemo(
+    () =>
+      Math.max(
+        4,
+        ...records.flatMap((record) =>
+          record.record_contacts.map((contact) => contact.position),
+        ),
+      ),
+    [records],
+  );
 
   useEffect(() => {
     const raw = localStorage.getItem("records-table-preferences");
@@ -272,7 +282,7 @@ export function RecordsTable({
       )),
       { ...makeColumn("origin", "KÖKEN", 120), filterFn: multiFilter },
       { ...makeColumn("vote_status", "OY DURUMU", 130), filterFn: multiFilter },
-      ...([1, 2, 3, 4] as const).map(
+      ...Array.from({ length: contactColumnCount }, (_, index) => index + 1).map(
         (position): ColumnDef<FurnitureRecord> => ({
           id: `contact_${position}`,
           accessorFn: (record) => contactAt(record, position),
@@ -351,7 +361,7 @@ export function RecordsTable({
         ),
       },
     ],
-    [editable, deletingId, coloringId],
+    [editable, deletingId, coloringId, contactColumnCount],
   );
 
   const table = useReactTable({

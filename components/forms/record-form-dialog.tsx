@@ -192,6 +192,7 @@ export function RecordFormDialog({
   const editable = role === "admin" || role === "editor";
   const queryClient = useQueryClient();
   const [contactIds, setContactIds] = useState<string[]>([]);
+  const [contactSlotCount, setContactSlotCount] = useState(4);
   const [newContact, setNewContact] = useState("");
   const [addingContact, setAddingContact] = useState(false);
   const [initialVersion, setInitialVersion] = useState<number | null>(null);
@@ -204,13 +205,13 @@ export function RecordFormDialog({
   useEffect(() => {
     if (!open) return;
     form.reset(record ? valuesFromRecord(record) : emptyValues);
-    setContactIds(
-      record
-        ? [...record.record_contacts]
-            .sort((a, b) => a.position - b.position)
-            .map((item) => item.contact_person_id)
-        : [],
-    );
+    const recordContactIds = record
+      ? [...record.record_contacts]
+          .sort((a, b) => a.position - b.position)
+          .map((item) => item.contact_person_id)
+      : [];
+    setContactIds(recordContactIds);
+    setContactSlotCount(Math.max(4, recordContactIds.length));
     setInitialVersion(record?.version ?? null);
     setConflict(false);
   }, [open, record?.id, form]);
@@ -236,8 +237,9 @@ export function RecordFormDialog({
     }
     await queryClient.invalidateQueries({ queryKey: ["contacts"] });
     const person = data as ContactPerson;
-    if (contactIds.length < 4 && !contactIds.includes(person.id)) {
+    if (!contactIds.includes(person.id)) {
       setContactIds([...contactIds, person.id]);
+      setContactSlotCount((current) => Math.max(current, contactIds.length + 1));
     }
     setNewContact("");
   }
@@ -325,9 +327,22 @@ export function RecordFormDialog({
               </label>
             ))}
             <div className="space-y-2 sm:col-span-2">
-              <p className="text-sm font-medium">Temas sorumluları (en fazla 4)</p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-medium">Temas sorumluları</p>
+                {editable && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setContactSlotCount((current) => current + 1)}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Temas alanı ekle
+                  </Button>
+                )}
+              </div>
               <div className="grid gap-2 sm:grid-cols-2">
-                {[0, 1, 2, 3].map((index) => (
+                {Array.from({ length: contactSlotCount }, (_, index) => (
                   <ContactCombobox
                     key={index}
                     contacts={sortedContacts}
@@ -339,7 +354,7 @@ export function RecordFormDialog({
                       const next = [...contactIds];
                       if (contactId) next[index] = contactId;
                       else next.splice(index, 1);
-                      setContactIds(next.filter(Boolean).slice(0, 4));
+                      setContactIds(next.filter(Boolean));
                     }}
                   />
                 ))}

@@ -123,9 +123,7 @@ export async function fetchProfile(): Promise<Profile> {
 }
 
 export function contactsForRecord(record: FurnitureRecord): string[] {
-  return [1, 2, 3, 4].map(
-    (position) =>
-      record.record_contacts.find((contact) => contact.position === position)?.contact_people
-        ?.display_name ?? "",
-  );
+  return [...record.record_contacts]
+    .sort((a, b) => a.position - b.position)
+    .map((contact) => contact.contact_people?.display_name ?? "");
 }

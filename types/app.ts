@@ -8,7 +8,7 @@ export interface ContactPerson {
 }
 
 export interface RecordContact {
-  position: 1 | 2 | 3 | 4;
+  position: number;
   contact_person_id: string;
   contact_people: ContactPerson;
 }

@@ -65,6 +65,9 @@ export function recordToExcelRow(record: FurnitureRecord) {
     "TEMAS 2": contacts[1],
     "TEMAS 3": contacts[2],
     "TEMAS 4": contacts[3],
+    ...Object.fromEntries(
+      contacts.slice(4).map((contact, index) => [`TEMAS ${index + 5}`, contact]),
+    ),
     NOTLAR: record.notes ?? "",
     MAHALLE: record.district ?? "",
     CADDE: record.street ?? "",
@@ -74,17 +77,33 @@ export function recordToExcelRow(record: FurnitureRecord) {
 }
 
 export function exportRecords(records: FurnitureRecord[], prefix = "mobilya-takip") {
+  const contactCount = Math.max(
+    4,
+    ...records.map((record) => record.record_contacts.length),
+  );
+  const headers = [
+    ...EXCEL_HEADERS.slice(0, 9),
+    ...Array.from({ length: contactCount }, (_, index) => `TEMAS ${index + 1}`),
+    ...EXCEL_HEADERS.slice(13),
+  ];
   const sheet = XLSX.utils.json_to_sheet(records.map(recordToExcelRow), {
-    header: [...EXCEL_HEADERS],
+    header: headers,
   });
   sheet["!cols"] = [
-    7, 12, 15, 28, 10, 55, 28, 15, 15, 20, 20, 20, 20, 48, 22, 25, 55, 45,
+    7, 12, 15, 28, 10, 55, 28, 15, 15,
+    ...Array.from({ length: contactCount }, () => 20),
+    48, 22, 25, 55, 45,
   ].map((wch) => ({ wch }));
-  sheet["!autofilter"] = { ref: `A1:R${records.length + 1}` };
+  sheet["!autofilter"] = {
+    ref: XLSX.utils.encode_range({
+      s: { r: 0, c: 0 },
+      e: { r: records.length, c: headers.length - 1 },
+    }),
+  };
   for (let row = 1; row <= records.length; row += 1) {
     const rowColor = records[row - 1].row_color;
     if (rowColor) {
-      for (let column = 0; column < EXCEL_HEADERS.length; column += 1) {
+      for (let column = 0; column < headers.length; column += 1) {
         const address = XLSX.utils.encode_cell({ r: row, c: column });
         if (sheet[address]) {
           sheet[address].s = {
@@ -97,7 +116,7 @@ export function exportRecords(records: FurnitureRecord[], prefix = "mobilya-taki
         }
       }
     }
-    for (const column of [13, 17]) {
+    for (const column of [9 + contactCount, 13 + contactCount]) {
       const address = XLSX.utils.encode_cell({ r: row, c: column });
       if (sheet[address]) {
         sheet[address].s = {
@@ -157,7 +176,10 @@ export async function parseWorkbook(file: File): Promise<ParsedExcelRow[]> {
     if (!professionGroup) errors.push("Meslek Grubu zorunlu.");
     if (!status) errors.push("Durumu zorunlu.");
 
-    const contactNames = ["TEMAS 1", "TEMAS 2", "TEMAS 3", "TEMAS 4"]
+    const contactHeaders = actualHeaders
+      .filter((header) => /^TEMAS \d+$/.test(header))
+      .sort((left, right) => Number(left.slice(6)) - Number(right.slice(6)));
+    const contactNames = contactHeaders
       .map((header) => cell(row, header))
       .filter((value): value is string => Boolean(value));
     if (new Set(contactNames.map(normalizeText)).size !== contactNames.length) {
