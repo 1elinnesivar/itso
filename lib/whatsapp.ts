@@ -1,12 +1,12 @@
 export const CONTACT_WHATSAPP_MESSAGE = `Selamünaleyküm, hayırlı işler.
 
-Üç gün önce gerçekleştirdiğimiz davetimize katılarak yanımızda olduğunuz için gönülden teşekkür ederim.
+Üç gün önce Ticaret ve Sanayi Odası seçimleriyle ilgili gerçekleştirdiğimiz davetimize katılıp yanımızda olduğunuz için çok teşekkür ederim.
 
-Mobilya Toptan ve Perakende Komitesi için görüşebileceğinizi belirttiğiniz kişilerin yer aldığı listeyi sizinle paylaştım. Sizden ricamız, mümkün olan en kısa sürede listedeki isimlerle iletişime geçerek komitemize destek olmaları konusunda görüşmenizdir.
+Mobilya Toptan ve Perakende Komitesi için görüşebileceğinizi söylediğiniz kişilerin listesini sizinle paylaştım. Sizden ricam, *mümkün olan en kısa sürede* listedeki isimlerle iletişime geçip komitemiz için desteklerini istemeniz.
 
-Devam eden süreçte, belirttiğiniz kişilere gerçekleştireceğimiz ziyaretlerde de sizi yanımızda görmekten memnuniyet duyarız.
+Önümüzdeki süreçte bu kişilere yapacağımız ziyaretlerde de sizi yanımızda görmek isteriz.
 
-Desteğiniz için şimdiden teşekkür eder, hayırlı günler dilerim.
+Desteğiniz için şimdiden teşekkür ederim. Hayırlı işler, iyi günler dilerim.
 
 Alican Yavaş
 Mobilyamevime`;
