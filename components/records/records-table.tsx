@@ -702,7 +702,14 @@ export function RecordsTable({
           <div className="space-y-3 p-3 md:hidden">
             {table.getRowModel().rows.map((row) => {
               const record = row.original;
-              const recordContacts = contactsForRecord(record).filter(Boolean);
+              const recordContactEntries = [...record.record_contacts]
+                .sort((left, right) => left.position - right.position)
+                .map((contact) => ({
+                  position: contact.position,
+                  name: contact.contact_people?.display_name ?? "",
+                }))
+                .filter((contact) => contact.name);
+              const recordContacts = recordContactEntries.map((contact) => contact.name);
               return (
                 <article
                   key={record.id}
@@ -713,7 +720,7 @@ export function RecordsTable({
                       <p className="text-xs text-muted-foreground">
                         #{record.display_order} · Üye Sicil {record.member_registry_no}
                       </p>
-                      <h2 className="mt-1 line-clamp-3 font-semibold">{record.title}</h2>
+                      <h2 className="mt-1 break-words font-semibold">{record.title}</h2>
                     </div>
                     <Badge variant={record.status === "Faal" ? "default" : "secondary"}>
                       {record.status}
@@ -725,10 +732,53 @@ export function RecordsTable({
                     <dt className="text-muted-foreground">Temas</dt>
                     <dd>{recordContacts.join(", ") || "—"}</dd>
                     <dt className="text-muted-foreground">Telefon</dt>
-                    <dd className="line-clamp-2 whitespace-pre-line">{record.phone_numbers || "—"}</dd>
+                    <dd className="whitespace-pre-wrap break-words">
+                      {record.phone_numbers || "—"}
+                    </dd>
                     <dt className="text-muted-foreground">Renk</dt>
                     <dd>{colorLabels[record.row_color ?? ""]}</dd>
                   </dl>
+                  {!isAnonymous && (
+                    <details className="group mt-4 border-t pt-3">
+                      <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between rounded-md px-2 text-sm font-medium hover:bg-background/60">
+                        <span className="group-open:hidden">Tüm bilgileri göster</span>
+                        <span className="hidden group-open:inline">Bilgileri gizle</span>
+                        <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                      </summary>
+                      <dl className="mt-2 grid grid-cols-[7rem_minmax(0,1fr)] gap-x-2 gap-y-3 rounded-md bg-background/55 p-3 text-sm">
+                        <dt className="text-muted-foreground">Ticaret Sicil</dt>
+                        <dd className="break-words">{record.trade_registry_no || "—"}</dd>
+                        <dt className="text-muted-foreground">Meslek Grubu</dt>
+                        <dd className="break-words">{record.profession_group || "—"}</dd>
+                        <dt className="text-muted-foreground">Yetkililer</dt>
+                        <dd className="whitespace-pre-wrap break-words">
+                          {record.officials || "—"}
+                        </dd>
+                        <dt className="text-muted-foreground">Köken</dt>
+                        <dd className="break-words">{record.origin || "—"}</dd>
+                        <dt className="text-muted-foreground">Oy Durumu</dt>
+                        <dd className="break-words">{record.vote_status || "—"}</dd>
+                        {recordContactEntries.map((contact) => (
+                          <div key={`${record.id}-${contact.position}`} className="contents">
+                            <dt className="text-muted-foreground">
+                              TEMAS {contact.position}
+                            </dt>
+                            <dd className="break-words">{contact.name}</dd>
+                          </div>
+                        ))}
+                        <dt className="text-muted-foreground">Notlar</dt>
+                        <dd className="whitespace-pre-wrap break-words">
+                          {record.notes || "—"}
+                        </dd>
+                        <dt className="text-muted-foreground">Cadde</dt>
+                        <dd className="break-words">{record.street || "—"}</dd>
+                        <dt className="text-muted-foreground">Tescil Adresi</dt>
+                        <dd className="whitespace-pre-wrap break-words">
+                          {record.registered_address || "—"}
+                        </dd>
+                      </dl>
+                    </details>
+                  )}
                   <div className="mt-4 flex justify-end gap-2 border-t pt-3">
                     <Button
                       variant="outline"
