@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Building2,
@@ -14,14 +15,42 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { useRecords } from "@/hooks/use-records";
 import { parseContactDisplayName } from "@/lib/contacts";
 import { downloadContactCompaniesPdf } from "@/lib/pdf/contact-companies";
+import { createClient } from "@/lib/supabase/client";
+import {
+  createWhatsAppUrl,
+  normalizeWhatsAppNumber,
+} from "@/lib/whatsapp";
 
 export function ContactProfile({ contactId }: { contactId: string }) {
   const { records, contacts } = useRecords();
+  const queryClient = useQueryClient();
   const [downloading, setDownloading] = useState(false);
+  const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [savingPhone, setSavingPhone] = useState(false);
   const contact = contacts.data?.find((item) => item.id === contactId);
+  const storedWhatsAppNumber = useQuery({
+    queryKey: ["contact-whatsapp", contactId],
+    queryFn: async () => {
+      const { data, error } = await createClient().rpc(
+        "get_contact_whatsapp_number",
+        { p_id: contactId },
+      );
+      return error ? null : (data as string | null);
+    },
+    retry: false,
+  });
 
   const companies = useMemo(
     () =>
@@ -84,6 +113,51 @@ export function ContactProfile({ contactId }: { contactId: string }) {
 
   const activeCount = companies.filter((record) => record.status === "Faal").length;
   const contactDetails = parseContactDisplayName(contact.display_name);
+  const effectiveWhatsAppNumber =
+    storedWhatsAppNumber.data ?? contactDetails.communicationLines[0] ?? "";
+  const communicationLines = contactDetails.communicationLines.length
+    ? contactDetails.communicationLines
+    : storedWhatsAppNumber.data
+      ? [storedWhatsAppNumber.data]
+      : [];
+
+  function openWhatsApp(number: string) {
+    const url = createWhatsAppUrl(number);
+    if (!url) {
+      toast.error("Geçerli bir WhatsApp numarası girin.");
+      return false;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+    return true;
+  }
+
+  function startWhatsApp() {
+    if (effectiveWhatsAppNumber && openWhatsApp(effectiveWhatsAppNumber)) return;
+    setPhoneInput("");
+    setPhoneDialogOpen(true);
+  }
+
+  async function savePhoneAndOpenWhatsApp() {
+    const normalized = normalizeWhatsAppNumber(phoneInput);
+    if (!normalized || !openWhatsApp(normalized)) return;
+
+    setPhoneDialogOpen(false);
+    setSavingPhone(true);
+    const { data, error } = await createClient().rpc(
+      "set_contact_whatsapp_number",
+      {
+        p_id: contactId,
+        p_phone: normalized,
+      },
+    );
+    setSavingPhone(false);
+    if (error) {
+      toast.error("WhatsApp açıldı ancak numara profile kaydedilemedi.");
+      return;
+    }
+    queryClient.setQueryData(["contact-whatsapp", contactId], data as string);
+    toast.success("WhatsApp numarası profile kaydedildi.");
+  }
 
   return (
     <div className="space-y-6">
@@ -141,9 +215,9 @@ export function ContactProfile({ contactId }: { contactId: string }) {
         </span>
         <div className="flex-1">
           <h2 className="font-semibold">İletişim</h2>
-          {contactDetails.communicationLines.length ? (
+          {communicationLines.length ? (
             <div className="mt-1 space-y-1">
-              {contactDetails.communicationLines.map((line, index) => (
+              {communicationLines.map((line, index) => (
                 <p
                   key={`${line}-${index}`}
                   className="flex items-center gap-2 text-sm font-medium"
@@ -163,9 +237,15 @@ export function ContactProfile({ contactId }: { contactId: string }) {
             bu profil üzerinden yönetilecek.
           </p>
         </div>
-        <Button variant="outline" disabled>
+        <Button
+          variant="outline"
+          onClick={startWhatsApp}
+          disabled={savingPhone}
+        >
           <MessageCircle className="h-4 w-4" />
-          WhatsApp — yakında
+          {effectiveWhatsAppNumber
+            ? "WhatsApp ile iletişime geç"
+            : "Numara ekle ve WhatsApp aç"}
         </Button>
       </section>
 
@@ -250,6 +330,51 @@ export function ContactProfile({ contactId }: { contactId: string }) {
           </div>
         )}
       </section>
+
+      <Dialog open={phoneDialogOpen} onOpenChange={setPhoneDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>WhatsApp numarası ekle</DialogTitle>
+            <DialogDescription>
+              Numara bu temas profiline kaydedilecek ve hazırlanan mesajla
+              WhatsApp açılacak.
+            </DialogDescription>
+          </DialogHeader>
+          <label className="space-y-1.5 text-sm font-medium">
+            Telefon numarası
+            <Input
+              value={phoneInput}
+              onChange={(event) => setPhoneInput(event.target.value)}
+              placeholder="Örn. 0532 123 45 67"
+              inputMode="tel"
+              autoFocus
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void savePhoneAndOpenWhatsApp();
+                }
+              }}
+            />
+          </label>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPhoneDialogOpen(false)}
+            >
+              Vazgeç
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void savePhoneAndOpenWhatsApp()}
+              disabled={!phoneInput.trim() || savingPhone}
+            >
+              {savingPhone && <Loader2 className="h-4 w-4 animate-spin" />}
+              Kaydet ve WhatsApp aç
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
