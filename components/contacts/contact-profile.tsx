@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Building2,
+  Check,
+  Copy,
   Download,
   Loader2,
   MessageCircle,
@@ -23,12 +25,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useRecords } from "@/hooks/use-records";
 import { parseContactDisplayName } from "@/lib/contacts";
 import { downloadContactCompaniesPdf } from "@/lib/pdf/contact-companies";
 import { createClient } from "@/lib/supabase/client";
 import {
-  createWhatsAppUrl,
+  CONTACT_WHATSAPP_MESSAGE,
   normalizeWhatsAppNumber,
 } from "@/lib/whatsapp";
 
@@ -37,6 +40,11 @@ export function ContactProfile({ contactId }: { contactId: string }) {
   const queryClient = useQueryClient();
   const [downloading, setDownloading] = useState(false);
   const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
+  const [packageDialogOpen, setPackageDialogOpen] = useState(false);
+  const [packageNumber, setPackageNumber] = useState("");
+  const [copiedField, setCopiedField] = useState<"number" | "message" | null>(
+    null,
+  );
   const [phoneInput, setPhoneInput] = useState("");
   const [savingPhone, setSavingPhone] = useState(false);
   const contact = contacts.data?.find((item) => item.id === contactId);
@@ -121,12 +129,16 @@ export function ContactProfile({ contactId }: { contactId: string }) {
       ? [storedWhatsAppNumber.data]
       : [];
 
-  async function copyNumber(number: string) {
+  async function copyText(
+    value: string,
+    field: "number" | "message",
+    successMessage: string,
+  ) {
     try {
-      await navigator.clipboard.writeText(number);
+      await navigator.clipboard.writeText(value);
     } catch {
       const input = document.createElement("textarea");
-      input.value = number;
+      input.value = value;
       input.style.position = "fixed";
       input.style.opacity = "0";
       document.body.appendChild(input);
@@ -134,36 +146,40 @@ export function ContactProfile({ contactId }: { contactId: string }) {
       document.execCommand("copy");
       input.remove();
     }
+    setCopiedField(field);
+    toast.success(successMessage);
+    window.setTimeout(
+      () => setCopiedField((current) => (current === field ? null : current)),
+      1800,
+    );
   }
 
-  function prepareWhatsAppPackage(number: string) {
+  function prepareCommunicationPackage(number: string) {
     const normalized = normalizeWhatsAppNumber(number);
-    const url = normalized ? createWhatsAppUrl(normalized) : null;
-    if (!normalized || !url) {
-      toast.error("Geçerli bir WhatsApp numarası girin.");
+    if (!normalized) {
+      toast.error("Geçerli bir telefon numarası girin.");
       return false;
     }
 
-    window.open(url, "_blank", "noopener,noreferrer");
-    void copyNumber(normalized);
+    setPackageNumber(normalized);
+    setCopiedField(null);
+    setPackageDialogOpen(true);
     setDownloading(true);
     void downloadContactCompaniesPdf(contactDetails.name, companies)
       .then(() => {
-        toast.success(
-          "Mesaj hazırlandı, PDF indirildi ve numara panoya kopyalandı.",
-        );
+        toast.success("Paket hazırlandı ve firma PDF’i indirildi.");
       })
       .catch(() => {
-        toast.error("WhatsApp açıldı ancak PDF indirilemedi.");
+        toast.error("Paket açıldı ancak PDF indirilemedi.");
       })
       .finally(() => setDownloading(false));
     return true;
   }
 
-  function startWhatsApp() {
+  function startPackage() {
     if (
       effectiveWhatsAppNumber &&
-      prepareWhatsAppPackage(effectiveWhatsAppNumber)
+      prepareCommunicationPackage(effectiveWhatsAppNumber)
     ) {
       return;
     }
@@ -171,11 +187,13 @@ export function ContactProfile({ contactId }: { contactId: string }) {
     setPhoneDialogOpen(true);
   }
 
-  async function savePhoneAndOpenWhatsApp() {
+  async function savePhoneAndPreparePackage() {
     const normalized = normalizeWhatsAppNumber(phoneInput);
-    if (!normalized || !prepareWhatsAppPackage(normalized)) return;
+    if (!normalized) {
+      toast.error("Geçerli bir telefon numarası girin.");
+      return;
+    }
 
-    setPhoneDialogOpen(false);
     setSavingPhone(true);
     const { data, error } = await createClient().rpc(
       "set_contact_whatsapp_number",
@@ -186,11 +204,13 @@ export function ContactProfile({ contactId }: { contactId: string }) {
     );
     setSavingPhone(false);
     if (error) {
-      toast.error("WhatsApp açıldı ancak numara profile kaydedilemedi.");
+      toast.error("Numara profile kaydedilemedi.");
       return;
     }
     queryClient.setQueryData(["contact-whatsapp", contactId], data as string);
-    toast.success("WhatsApp numarası profile kaydedildi.");
+    setPhoneDialogOpen(false);
+    prepareCommunicationPackage(normalized);
+    toast.success("Telefon numarası profile kaydedildi.");
   }
 
   return (
@@ -267,13 +287,13 @@ export function ContactProfile({ contactId }: { contactId: string }) {
             </p>
           )}
           <p className="mt-2 text-xs text-muted-foreground">
-            Mesaj WhatsApp’ta hazır olarak açılır; gönderme işlemini siz
-            onaylarsınız. Firma PDF’i indirilir ve numara panoya kopyalanır.
+            Paket penceresinden telefon numarasını ve mesajı ayrı ayrı
+            kopyalayabilirsiniz. Firma PDF’i otomatik indirilir.
           </p>
         </div>
         <Button
           variant="outline"
-          onClick={startWhatsApp}
+          onClick={startPackage}
           disabled={savingPhone || downloading}
         >
           {downloading ? (
@@ -282,7 +302,7 @@ export function ContactProfile({ contactId }: { contactId: string }) {
             <MessageCircle className="h-4 w-4" />
           )}
           {effectiveWhatsAppNumber
-            ? "WhatsApp paketini hazırla"
+            ? "İletişim paketini hazırla"
             : "Numara ekle ve paketi hazırla"}
         </Button>
       </section>
@@ -372,10 +392,10 @@ export function ContactProfile({ contactId }: { contactId: string }) {
       <Dialog open={phoneDialogOpen} onOpenChange={setPhoneDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>WhatsApp numarası ekle</DialogTitle>
+            <DialogTitle>Telefon numarası ekle</DialogTitle>
             <DialogDescription>
-              Numara profile kaydedilecek; mesaj ekranı açılacak, firma PDF’i
-              indirilecek ve numara panoya kopyalanacak.
+              Numara profile kaydedilecek, paket penceresi açılacak ve firma
+              PDF’i indirilecek.
             </DialogDescription>
           </DialogHeader>
           <label className="space-y-1.5 text-sm font-medium">
@@ -389,7 +409,7 @@ export function ContactProfile({ contactId }: { contactId: string }) {
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault();
-                  void savePhoneAndOpenWhatsApp();
+                  void savePhoneAndPreparePackage();
                 }
               }}
             />
@@ -404,7 +424,7 @@ export function ContactProfile({ contactId }: { contactId: string }) {
             </Button>
             <Button
               type="button"
-              onClick={() => void savePhoneAndOpenWhatsApp()}
+              onClick={() => void savePhoneAndPreparePackage()}
               disabled={!phoneInput.trim() || savingPhone || downloading}
             >
               {(savingPhone || downloading) && (
@@ -412,6 +432,82 @@ export function ContactProfile({ contactId }: { contactId: string }) {
               )}
               Kaydet ve paketi hazırla
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={packageDialogOpen} onOpenChange={setPackageDialogOpen}>
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>İletişim paketi hazır</DialogTitle>
+            <DialogDescription>
+              Firma PDF’i indirildi. Aşağıdaki numarayı ve mesajı kopyalayıp
+              istediğiniz uygulamada kullanabilirsiniz.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="package-number">
+                Telefon numarası
+              </label>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  id="package-number"
+                  value={packageNumber}
+                  readOnly
+                  className="font-mono"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    void copyText(
+                      packageNumber,
+                      "number",
+                      "Telefon numarası kopyalandı.",
+                    )
+                  }
+                >
+                  {copiedField === "number" ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                  Numarayı kopyala
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="package-message">
+                Mesaj
+              </label>
+              <Textarea
+                id="package-message"
+                value={CONTACT_WHATSAPP_MESSAGE}
+                readOnly
+                className="min-h-72 resize-y whitespace-pre-wrap"
+              />
+              <Button
+                type="button"
+                className="w-full sm:w-auto"
+                onClick={() =>
+                  void copyText(
+                    CONTACT_WHATSAPP_MESSAGE,
+                    "message",
+                    "Mesaj kopyalandı.",
+                  )
+                }
+              >
+                {copiedField === "message" ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+                Mesajı kopyala
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

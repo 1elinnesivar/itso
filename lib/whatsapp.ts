@@ -23,9 +23,3 @@ export function normalizeWhatsAppNumber(value: string): string | null {
   }
   return digits.length >= 10 && digits.length <= 15 ? digits : null;
 }
-
-export function createWhatsAppUrl(number: string) {
-  const normalized = normalizeWhatsAppNumber(number);
-  if (!normalized) return null;
-  return `https://wa.me/${normalized}?text=${encodeURIComponent(CONTACT_WHATSAPP_MESSAGE)}`;
-}

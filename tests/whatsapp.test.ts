@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   CONTACT_WHATSAPP_MESSAGE,
-  createWhatsAppUrl,
   normalizeWhatsAppNumber,
 } from "@/lib/whatsapp";
 
@@ -12,15 +11,7 @@ describe("WhatsApp iletişimi", () => {
     expect(normalizeWhatsAppNumber("5321234567")).toBe("905321234567");
   });
 
-  it("hazırlanan mesajı WhatsApp bağlantısına eksiksiz ekler", () => {
-    const url = createWhatsAppUrl("0532 123 45 67");
-
-    expect(url).not.toBeNull();
-    const parsed = new URL(url!);
-    expect(parsed.hostname).toBe("wa.me");
-    expect(parsed.pathname).toBe("/905321234567");
-    expect(parsed.searchParams.get("text")).toBe(CONTACT_WHATSAPP_MESSAGE);
-    expect(parsed.searchParams.has("send")).toBe(false);
+  it("kopyalanacak iletişim mesajını eksiksiz tutar", () => {
     expect(CONTACT_WHATSAPP_MESSAGE).toContain(
       "*mümkün olan en kısa sürede*",
     );
@@ -32,6 +23,5 @@ describe("WhatsApp iletişimi", () => {
 
   it("geçersiz numarayı reddeder", () => {
     expect(normalizeWhatsAppNumber("123")).toBeNull();
-    expect(createWhatsAppUrl("123")).toBeNull();
   });
 });
