@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Loader2, Plus } from "lucide-react";
+import { AlertTriangle, Check, Loader2, Plus, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -74,6 +74,107 @@ const textFields: Array<{
   { name: "district", label: "Mahalle" },
   { name: "street", label: "Cadde", full: true },
 ];
+
+function ContactCombobox({
+  contacts,
+  selectedId,
+  disabledIds,
+  placeholder,
+  disabled,
+  onChange,
+}: {
+  contacts: ContactPerson[];
+  selectedId: string;
+  disabledIds: string[];
+  placeholder: string;
+  disabled: boolean;
+  onChange: (id: string) => void;
+}) {
+  const selected = contacts.find((contact) => contact.id === selectedId);
+  const [query, setQuery] = useState(selected?.display_name ?? "");
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setQuery(selected?.display_name ?? "");
+  }, [selected?.display_name]);
+
+  const results = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase("tr-TR");
+    return contacts
+      .filter(
+        (contact) =>
+          (!normalized ||
+            contact.display_name.toLocaleLowerCase("tr-TR").includes(normalized)) &&
+          (!disabledIds.includes(contact.id) || contact.id === selectedId),
+      )
+      .slice(0, 50);
+  }, [contacts, disabledIds, query, selectedId]);
+
+  return (
+    <div className="relative">
+      <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+      <Input
+        className="pl-9 pr-9"
+        value={query}
+        disabled={disabled}
+        role="combobox"
+        aria-expanded={open}
+        aria-autocomplete="list"
+        placeholder={placeholder}
+        onFocus={() => setOpen(true)}
+        onBlur={() => window.setTimeout(() => setOpen(false), 150)}
+        onChange={(event) => {
+          setQuery(event.target.value);
+          setOpen(true);
+        }}
+      />
+      {selectedId && !disabled && (
+        <button
+          type="button"
+          className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded hover:bg-muted"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            onChange("");
+            setQuery("");
+          }}
+          aria-label={`${placeholder} seçimini temizle`}
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
+      {open && !disabled && (
+        <div
+          role="listbox"
+          className="absolute z-40 mt-1 max-h-64 w-full overflow-y-auto rounded-md border bg-background p-1 shadow-lg"
+        >
+          {results.map((contact) => (
+            <button
+              key={contact.id}
+              type="button"
+              role="option"
+              aria-selected={contact.id === selectedId}
+              className="flex min-h-10 w-full items-center rounded px-3 py-2 text-left text-sm hover:bg-muted"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                onChange(contact.id);
+                setQuery(contact.display_name);
+                setOpen(false);
+              }}
+            >
+              <span className="flex-1">{contact.display_name}</span>
+              {contact.id === selectedId && <Check className="h-4 w-4 text-primary" />}
+            </button>
+          ))}
+          {!results.length && (
+            <p className="px-3 py-4 text-center text-sm text-muted-foreground">
+              Temas sorumlusu bulunamadı.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function RecordFormDialog({
   open,
@@ -227,28 +328,20 @@ export function RecordFormDialog({
               <p className="text-sm font-medium">Temas sorumluları (en fazla 4)</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {[0, 1, 2, 3].map((index) => (
-                  <select
+                  <ContactCombobox
                     key={index}
-                    value={contactIds[index] ?? ""}
-                    onChange={(event) => {
+                    contacts={sortedContacts}
+                    selectedId={contactIds[index] ?? ""}
+                    disabledIds={contactIds}
+                    placeholder={`TEMAS ${index + 1}`}
+                    disabled={!editable}
+                    onChange={(contactId) => {
                       const next = [...contactIds];
-                      if (event.target.value) next[index] = event.target.value;
+                      if (contactId) next[index] = contactId;
                       else next.splice(index, 1);
                       setContactIds(next.filter(Boolean).slice(0, 4));
                     }}
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
-                  >
-                    <option value="">TEMAS {index + 1}</option>
-                    {sortedContacts.map((contact) => (
-                      <option
-                        key={contact.id}
-                        value={contact.id}
-                        disabled={contactIds.includes(contact.id) && contactIds[index] !== contact.id}
-                      >
-                        {contact.display_name}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 ))}
               </div>
               {editable && (

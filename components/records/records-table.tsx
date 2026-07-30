@@ -656,7 +656,24 @@ export function RecordsTable({
                           !["contact_owner", "row_color_filter"].includes(cell.column.id),
                       )
                       .map((cell) => (
-                        <td key={cell.id} className="max-w-md border-r px-3 py-3">
+                        <td
+                          key={cell.id}
+                          className={`max-w-md border-r px-3 py-3 ${
+                            editable && cell.column.id !== "actions"
+                              ? "cursor-pointer transition-colors hover:bg-primary/5"
+                              : ""
+                          }`}
+                          title={
+                            editable && cell.column.id !== "actions"
+                              ? "Kaydı düzenlemek için tıklayın"
+                              : undefined
+                          }
+                          onClick={() => {
+                            if (!editable || cell.column.id === "actions") return;
+                            setSelected(row.original);
+                            setDialogOpen(true);
+                          }}
+                        >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}
