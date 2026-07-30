@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Archive, FileSpreadsheet, History, LogIn, LogOut, Table2 } from "lucide-react";
+import {
+  Archive,
+  ContactRound,
+  FileSpreadsheet,
+  History,
+  LogIn,
+  LogOut,
+  Table2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
@@ -25,6 +33,12 @@ export function AppShell({
   const isAnonymous = profile.id === "anonymous";
   const links = [
     { href: "/records", label: "Kayıtlar", icon: Table2, show: true },
+    {
+      href: "/contacts",
+      label: "Temaslar",
+      icon: ContactRound,
+      show: profile.role === "admin",
+    },
     { href: "/imports", label: "İçe Aktar", icon: FileSpreadsheet, show: profile.role === "admin" },
     { href: "/archive", label: "Arşiv", icon: Archive, show: profile.role === "admin" },
     { href: "/audit", label: "Denetim", icon: History, show: profile.role === "admin" },
