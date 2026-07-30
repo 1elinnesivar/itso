@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useRecords } from "@/hooks/use-records";
+import { parseContactDisplayName } from "@/lib/contacts";
 import { downloadContactCompaniesPdf } from "@/lib/pdf/contact-companies";
 
 export function ContactProfile({ contactId }: { contactId: string }) {
@@ -69,7 +70,10 @@ export function ContactProfile({ contactId }: { contactId: string }) {
   async function downloadPdf() {
     setDownloading(true);
     try {
-      await downloadContactCompaniesPdf(contact!.display_name, companies);
+      await downloadContactCompaniesPdf(
+        parseContactDisplayName(contact!.display_name).name,
+        companies,
+      );
       toast.success("Firma listesi PDF olarak indirildi.");
     } catch {
       toast.error("PDF oluşturulamadı.");
@@ -79,6 +83,7 @@ export function ContactProfile({ contactId }: { contactId: string }) {
   }
 
   const activeCount = companies.filter((record) => record.status === "Faal").length;
+  const contactDetails = parseContactDisplayName(contact.display_name);
 
   return (
     <div className="space-y-6">
@@ -98,7 +103,7 @@ export function ContactProfile({ contactId }: { contactId: string }) {
             </span>
             <div className="min-w-0 flex-1 sm:pb-1">
               <p className="text-sm font-medium text-primary">Temas sorumlusu</p>
-              <h1 className="break-words text-2xl font-bold">{contact.display_name}</h1>
+              <h1 className="break-words text-2xl font-bold">{contactDetails.name}</h1>
             </div>
             <Button
               onClick={() => void downloadPdf()}
@@ -136,7 +141,24 @@ export function ContactProfile({ contactId }: { contactId: string }) {
         </span>
         <div className="flex-1">
           <h2 className="font-semibold">İletişim</h2>
-          <p className="text-sm text-muted-foreground">
+          {contactDetails.communicationLines.length ? (
+            <div className="mt-1 space-y-1">
+              {contactDetails.communicationLines.map((line, index) => (
+                <p
+                  key={`${line}-${index}`}
+                  className="flex items-center gap-2 text-sm font-medium"
+                >
+                  <Phone className="h-4 w-4 text-primary" />
+                  {line}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Bu temas sorumlusu için kayıtlı iletişim numarası bulunmuyor.
+            </p>
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">
             WhatsApp gönderimi ve gönderildi/gönderilmedi takibi sonraki aşamada
             bu profil üzerinden yönetilecek.
           </p>

@@ -10,18 +10,11 @@ function safeFileName(value: string) {
     .replace(/^-|-$/g, "");
 }
 
-export async function downloadContactCompaniesPdf(
+export function createContactCompaniesPdfDefinition(
   contactName: string,
   records: FurnitureRecord[],
-) {
-  const [pdfMakeModule, fontModule] = await Promise.all([
-    import("pdfmake/build/pdfmake"),
-    import("pdfmake/build/vfs_fonts"),
-  ]);
-  const pdfMake = pdfMakeModule.default;
-  pdfMake.addVirtualFileSystem(fontModule.default);
-
-  const definition: TDocumentDefinitions = {
+): TDocumentDefinitions {
+  return {
     pageSize: "A4",
     pageOrientation: "landscape",
     pageMargins: [28, 32, 28, 34],
@@ -42,22 +35,24 @@ export async function downloadContactCompaniesPdf(
         margin: [0, 16, 0, 0],
         table: {
           headerRows: 1,
-          widths: [30, "*", 58, 62, 70, 110],
+          widths: [28, 52, "*", 92, 48, 145, 88],
           body: [
             [
-              { text: "Sıra", style: "tableHeader" },
-              { text: "Firma Unvanı", style: "tableHeader" },
-              { text: "Üye Sicil", style: "tableHeader" },
-              { text: "Durumu", style: "tableHeader" },
-              { text: "Mahalle", style: "tableHeader" },
-              { text: "Telefon", style: "tableHeader" },
+              { text: "SIRA", style: "tableHeader" },
+              { text: "SİCİL NO", style: "tableHeader" },
+              { text: "ÜNVAN", style: "tableHeader" },
+              { text: "YETKİLİ KİŞİ", style: "tableHeader" },
+              { text: "DURUM", style: "tableHeader" },
+              { text: "TESCİL ADRESİ", style: "tableHeader" },
+              { text: "TELEFON", style: "tableHeader" },
             ],
             ...records.map((record) => [
               String(record.display_order),
-              record.title,
               record.member_registry_no,
+              record.title,
+              record.officials || "—",
               record.status,
-              record.district || "—",
+              record.registered_address || "—",
               record.phone_numbers || "—",
             ]),
           ],
@@ -105,8 +100,20 @@ export async function downloadContactCompaniesPdf(
       },
     },
   };
+}
+
+export async function downloadContactCompaniesPdf(
+  contactName: string,
+  records: FurnitureRecord[],
+) {
+  const [pdfMakeModule, fontModule] = await Promise.all([
+    import("pdfmake/build/pdfmake"),
+    import("pdfmake/build/vfs_fonts"),
+  ]);
+  const pdfMake = pdfMakeModule.default;
+  pdfMake.addVirtualFileSystem(fontModule.default);
 
   await pdfMake
-    .createPdf(definition)
+    .createPdf(createContactCompaniesPdfDefinition(contactName, records))
     .download(`${safeFileName(contactName) || "temas-sorumlusu"}-firmalar.pdf`);
 }

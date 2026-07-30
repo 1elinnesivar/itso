@@ -5,6 +5,7 @@ import { ChevronRight, Loader2, Search, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { parseContactDisplayName } from "@/lib/contacts";
 import { fetchContacts } from "@/lib/records";
 import { createClient } from "@/lib/supabase/client";
 import { normalizeText } from "@/lib/utils";
@@ -33,10 +34,15 @@ export function ContactsOverview() {
     const query = normalizeText(search);
     return [...(contacts.data ?? [])]
       .filter(
-        (contact) => !query || normalizeText(contact.display_name).includes(query),
+        (contact) =>
+          !query ||
+          normalizeText(parseContactDisplayName(contact.display_name).name).includes(query),
       )
       .sort((left, right) =>
-        left.display_name.localeCompare(right.display_name, "tr"),
+        parseContactDisplayName(left.display_name).name.localeCompare(
+          parseContactDisplayName(right.display_name).name,
+          "tr",
+        ),
       );
   }, [contacts.data, search]);
 
@@ -80,7 +86,7 @@ export function ContactsOverview() {
               <UserRound className="h-5 w-5" />
             </span>
             <span className="min-w-0 flex-1 break-words font-semibold">
-              {contact.display_name}
+              {parseContactDisplayName(contact.display_name).name}
             </span>
             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
           </Link>
