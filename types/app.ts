@@ -7,6 +7,8 @@ export interface ContactPerson {
   normalized_name: string;
   outreach_sent_at?: string | null;
   outreach_sent_by?: string | null;
+  outreach_urgent_at?: string | null;
+  outreach_urgent_by?: string | null;
 }
 
 export interface RecordContact {

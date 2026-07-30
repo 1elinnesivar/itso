@@ -97,13 +97,22 @@ export async function fetchContacts(): Promise<ContactPerson[]> {
   const { data, error } = await supabase
     .from("contact_people")
     .select(
-      "id, display_name, normalized_name, outreach_sent_at, outreach_sent_by",
+      "id, display_name, normalized_name, outreach_sent_at, outreach_sent_by, outreach_urgent_at, outreach_urgent_by",
     )
     .order("display_name");
   if (!error) return (data ?? []) as ContactPerson[];
 
-  // Yeni migration henüz production'a uygulanmadıysa isim listesi çalışmaya
-  // devam eder; durum değiştirme işlemi kullanıcıya migration hatasını gösterir.
+  // Acil öncelik migration'ı henüz uygulanmadıysa gönderim durumlarını koru.
+  const { data: statusData, error: statusError } = await supabase
+    .from("contact_people")
+    .select(
+      "id, display_name, normalized_name, outreach_sent_at, outreach_sent_by",
+    )
+    .order("display_name");
+  if (!statusError) return (statusData ?? []) as ContactPerson[];
+
+  // Gönderim migration'ı da henüz uygulanmadıysa isim listesi çalışmaya devam
+  // eder; durum değiştirme işlemi kullanıcıya migration hatasını gösterir.
   const { data: fallbackData, error: fallbackError } = await supabase
     .from("contact_people")
     .select("id, display_name, normalized_name")
