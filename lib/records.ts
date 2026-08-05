@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
 import type { ContactPerson, FurnitureRecord, Profile } from "@/types/app";
 
+export const UNASSIGNED_CONTACT_FILTER_VALUE = "__unassigned_contact__";
+
 export const RECORD_SELECT = `
   *,
   record_contacts (
@@ -145,4 +147,20 @@ export function contactsForRecord(record: FurnitureRecord): string[] {
   return [...record.record_contacts]
     .sort((a, b) => a.position - b.position)
     .map((contact) => contact.contact_people?.display_name ?? "");
+}
+
+export function recordMatchesContactFilter(
+  record: FurnitureRecord,
+  selectedContactIds: string[],
+): boolean {
+  if (!selectedContactIds.length) return true;
+  if (
+    !record.record_contacts.length &&
+    selectedContactIds.includes(UNASSIGNED_CONTACT_FILTER_VALUE)
+  ) {
+    return true;
+  }
+  return record.record_contacts.some((contact) =>
+    selectedContactIds.includes(contact.contact_person_id),
+  );
 }

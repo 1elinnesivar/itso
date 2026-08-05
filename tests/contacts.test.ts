@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { parseContactDisplayName } from "@/lib/contacts";
 import { createContactCompaniesPdfDefinition } from "@/lib/pdf/contact-companies";
+import {
+  recordMatchesContactFilter,
+  UNASSIGNED_CONTACT_FILTER_VALUE,
+} from "@/lib/records";
 import type { FurnitureRecord } from "@/types/app";
 
 const record = {
@@ -28,6 +32,35 @@ describe("Temas sorumlusu iletişim bilgisi", () => {
 
     expect(parsed.name).toBe("ALİ YILMAZ (BAŞKAN)");
     expect(parsed.communicationLines).toEqual([]);
+  });
+});
+
+describe("Temas sorumlusu filtresi", () => {
+  const unassignedRecord = {
+    record_contacts: [],
+  } as unknown as FurnitureRecord;
+  const assignedRecord = {
+    record_contacts: [{ contact_person_id: "contact-1" }],
+  } as unknown as FurnitureRecord;
+
+  it("temas atanmamış kayıtları özel seçenekle bulur", () => {
+    expect(
+      recordMatchesContactFilter(unassignedRecord, [
+        UNASSIGNED_CONTACT_FILTER_VALUE,
+      ]),
+    ).toBe(true);
+    expect(
+      recordMatchesContactFilter(assignedRecord, [
+        UNASSIGNED_CONTACT_FILTER_VALUE,
+      ]),
+    ).toBe(false);
+  });
+
+  it("temas atanmamış seçeneğini sorumlu isimleriyle birlikte kullanır", () => {
+    const selected = [UNASSIGNED_CONTACT_FILTER_VALUE, "contact-1"];
+
+    expect(recordMatchesContactFilter(unassignedRecord, selected)).toBe(true);
+    expect(recordMatchesContactFilter(assignedRecord, selected)).toBe(true);
   });
 });
 

@@ -42,7 +42,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { exportRecords } from "@/lib/excel/records";
-import { contactsForRecord } from "@/lib/records";
+import {
+  contactsForRecord,
+  recordMatchesContactFilter,
+  UNASSIGNED_CONTACT_FILTER_VALUE,
+} from "@/lib/records";
 import { createClient } from "@/lib/supabase/client";
 import { normalizeText } from "@/lib/utils";
 import type { AppRole, ContactPerson, FurnitureRecord } from "@/types/app";
@@ -54,8 +58,7 @@ const multiFilter: FilterFn<FurnitureRecord> = (row, columnId, value: string[]) 
   !value?.length || value.includes(String(row.getValue(columnId) ?? ""));
 
 const contactFilter: FilterFn<FurnitureRecord> = (row, _columnId, value: string[]) =>
-  !value?.length ||
-  row.original.record_contacts.some((item) => value.includes(item.contact_person_id));
+  recordMatchesContactFilter(row.original, value ?? []);
 
 function contactAt(record: FurnitureRecord, position: number) {
   return (
@@ -492,10 +495,16 @@ export function RecordsTable({
       {!isAnonymous && (
         <MultiSelectFilter
           label="Temas sorumlusu"
-          options={contacts.map((contact) => ({
-            value: contact.id,
-            label: contact.display_name,
-          }))}
+          options={[
+            {
+              value: UNASSIGNED_CONTACT_FILTER_VALUE,
+              label: "Temas atanmamış",
+            },
+            ...contacts.map((contact) => ({
+              value: contact.id,
+              label: contact.display_name,
+            })),
+          ]}
           value={filterValue("contact_owner")}
           onChange={(value) => table.getColumn("contact_owner")?.setFilterValue(value)}
         />
