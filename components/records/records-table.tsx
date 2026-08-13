@@ -537,28 +537,40 @@ export function RecordsTable({
   return (
     <>
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <div className="flex items-center justify-between rounded-lg border border-red-300 bg-red-100 px-4 py-3">
-            <span className="text-sm font-semibold text-red-800">Kırmızı</span>
-            <span className="text-xl font-bold tabular-nums text-red-800">
+        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 sm:gap-2">
+          <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600" />
+            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+              Kırmızı
+            </span>
+            <span className="text-sm font-bold tabular-nums text-red-700">
               {colorCounts.red}
             </span>
           </div>
-          <div className="flex items-center justify-between rounded-lg border border-yellow-300 bg-yellow-100 px-4 py-3">
-            <span className="text-sm font-semibold text-yellow-800">Sarı</span>
-            <span className="text-xl font-bold tabular-nums text-yellow-800">
+          <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-yellow-400" />
+            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+              Sarı
+            </span>
+            <span className="text-sm font-bold tabular-nums text-yellow-700">
               {colorCounts.yellow}
             </span>
           </div>
-          <div className="flex items-center justify-between rounded-lg border border-green-300 bg-green-100 px-4 py-3">
-            <span className="text-sm font-semibold text-green-800">Yeşil</span>
-            <span className="text-xl font-bold tabular-nums text-green-800">
+          <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-green-600" />
+            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+              Yeşil
+            </span>
+            <span className="text-sm font-bold tabular-nums text-green-700">
               {colorCounts.green}
             </span>
           </div>
-          <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3">
-            <span className="text-sm font-semibold">Renksiz</span>
-            <span className="text-xl font-bold tabular-nums">
+          <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full border bg-muted" />
+            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+              Renksiz
+            </span>
+            <span className="text-sm font-bold tabular-nums">
               {colorCounts.none}
             </span>
           </div>
