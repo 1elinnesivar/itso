@@ -234,6 +234,17 @@ export function RecordsTable({
       ),
     [records],
   );
+  const colorCounts = useMemo(
+    () =>
+      records.reduce(
+        (counts, record) => {
+          counts[record.row_color ?? "none"] += 1;
+          return counts;
+        },
+        { red: 0, yellow: 0, green: 0, none: 0 },
+      ),
+    [records],
+  );
 
   useEffect(() => {
     const raw = localStorage.getItem("records-table-preferences");
@@ -526,6 +537,33 @@ export function RecordsTable({
   return (
     <>
       <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="flex items-center justify-between rounded-lg border border-red-300 bg-red-100 px-4 py-3">
+            <span className="text-sm font-semibold text-red-800">Kırmızı</span>
+            <span className="text-xl font-bold tabular-nums text-red-800">
+              {colorCounts.red}
+            </span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-yellow-300 bg-yellow-100 px-4 py-3">
+            <span className="text-sm font-semibold text-yellow-800">Sarı</span>
+            <span className="text-xl font-bold tabular-nums text-yellow-800">
+              {colorCounts.yellow}
+            </span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-green-300 bg-green-100 px-4 py-3">
+            <span className="text-sm font-semibold text-green-800">Yeşil</span>
+            <span className="text-xl font-bold tabular-nums text-green-800">
+              {colorCounts.green}
+            </span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3">
+            <span className="text-sm font-semibold">Renksiz</span>
+            <span className="text-xl font-bold tabular-nums">
+              {colorCounts.none}
+            </span>
+          </div>
+        </div>
+
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-64 flex-1 sm:max-w-md">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
