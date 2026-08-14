@@ -22,6 +22,7 @@ import {
   type RecordFormValues,
   type RecordParsedValues,
 } from "@/lib/validation/record";
+import { VOTE_STATUS_OPTIONS } from "@/lib/vote-status";
 import type { AppRole, ContactPerson, FurnitureRecord } from "@/types/app";
 
 const emptyValues: RecordFormValues = {
@@ -369,7 +370,21 @@ export function RecordFormDialog({
                 className={`space-y-1.5 text-sm font-medium ${field.full ? "sm:col-span-2" : ""}`}
               >
                 {field.label} {field.required && <span className="text-destructive">*</span>}
-                <Input {...form.register(field.name)} />
+                {field.name === "vote_status" ? (
+                  <select
+                    className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                    {...form.register("vote_status")}
+                  >
+                    <option value="">Seçiniz</option>
+                    {VOTE_STATUS_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <Input {...form.register(field.name)} />
+                )}
                 {form.formState.errors[field.name] && (
                   <span className="text-xs text-destructive">
                     {String(form.formState.errors[field.name]?.message)}

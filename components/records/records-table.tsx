@@ -49,6 +49,10 @@ import {
 } from "@/lib/records";
 import { createClient } from "@/lib/supabase/client";
 import { normalizeText } from "@/lib/utils";
+import {
+  AUTHORIZATION_DOCUMENT_RECEIVED,
+  countRecordsByVoteStatus,
+} from "@/lib/vote-status";
 import type { AppRole, ContactPerson, FurnitureRecord } from "@/types/app";
 
 const textFilter: FilterFn<FurnitureRecord> = (row, columnId, value) =>
@@ -243,6 +247,10 @@ export function RecordsTable({
         },
         { red: 0, yellow: 0, green: 0, none: 0 },
       ),
+    [records],
+  );
+  const authorizationDocumentCount = useMemo(
+    () => countRecordsByVoteStatus(records, AUTHORIZATION_DOCUMENT_RECEIVED),
     [records],
   );
 
@@ -537,7 +545,7 @@ export function RecordsTable({
   return (
     <>
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 sm:gap-2">
+        <div className="grid grid-cols-2 gap-1.5 md:grid-cols-6 md:gap-2">
           <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600" />
             <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
@@ -572,6 +580,15 @@ export function RecordsTable({
             </span>
             <span className="text-sm font-bold tabular-nums">
               {colorCounts.none}
+            </span>
+          </div>
+          <div className="col-span-2 flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-blue-600" />
+            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+              Yetki Belgesi Alındı
+            </span>
+            <span className="text-sm font-bold tabular-nums text-blue-700">
+              {authorizationDocumentCount}
             </span>
           </div>
         </div>
