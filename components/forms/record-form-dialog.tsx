@@ -39,6 +39,7 @@ const emptyValues: RecordFormValues = {
   street: "",
   registered_address: "",
   phone_numbers: "",
+  gift: false,
 };
 
 function valuesFromRecord(record: FurnitureRecord): RecordFormValues {
@@ -56,6 +57,7 @@ function valuesFromRecord(record: FurnitureRecord): RecordFormValues {
     street: record.street ?? "",
     registered_address: record.registered_address,
     phone_numbers: record.phone_numbers,
+    gift: record.gift ?? false,
   };
 }
 
@@ -403,6 +405,14 @@ export function RecordFormDialog({
                 <Textarea {...form.register(name as keyof RecordFormValues)} />
               </label>
             ))}
+            <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md border bg-background px-3 text-sm font-medium sm:col-span-2">
+              <input
+                type="checkbox"
+                className="h-5 w-5 rounded border accent-primary"
+                {...form.register("gift")}
+              />
+              Hediye
+            </label>
             <div className="space-y-2 sm:col-span-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-medium">Temas sorumluları</p>

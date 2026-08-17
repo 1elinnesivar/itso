@@ -50,6 +50,7 @@ function comparableParsed(row: ParsedExcelRow) {
       address: row.registered_address,
       phones: row.phone_numbers,
       rowColor: row.row_color,
+      gift: row.gift,
     }),
   );
 }
@@ -75,6 +76,7 @@ function comparableRecord(record: FurnitureRecord) {
       address: record.registered_address,
       phones: record.phone_numbers,
       rowColor: record.row_color,
+      gift: record.gift,
     }),
   );
 }
@@ -184,7 +186,9 @@ export function ImportPanel() {
       <div className="rounded-lg border border-dashed bg-background p-8 text-center">
         <FileSpreadsheet className="mx-auto h-10 w-10 text-primary" />
         <h2 className="mt-3 font-semibold">Excel dosyası seçin</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Beklenen biçim: 18 sütunlu .xlsx dosyası</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Beklenen biçim: 18 temel sütun; HEDİYE sütunu isteğe bağlı .xlsx dosyası
+        </p>
         <label className="mt-5 inline-block">
           <Input
             className="max-w-sm cursor-pointer"

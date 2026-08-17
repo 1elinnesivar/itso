@@ -33,6 +33,7 @@ export interface FurnitureRecord {
   street: string | null;
   registered_address: string;
   phone_numbers: string;
+  gift: boolean;
   row_color: RowColor;
   version: number;
   created_at: string;

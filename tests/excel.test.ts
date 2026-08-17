@@ -25,6 +25,7 @@ const record: FurnitureRecord = {
   street: null,
   registered_address: "Örnek adres",
   phone_numbers: "0555 000 00 00\n0224 000 00 00",
+  gift: true,
   row_color: "yellow",
   version: 1,
   created_at: "2026-01-01T00:00:00Z",
@@ -54,6 +55,7 @@ describe("Excel eşleştirmesi", () => {
     expect(row["TEMAS 1"]).toBe("ÖRNEK SORUMLU");
     expect(row["Telefon Numaraları"]).toContain("\n");
     expect(row.NOTLAR).toBe("Birinci satır\nİkinci satır");
+    expect(row.HEDİYE).toBe("EVET");
   });
 
   it("çalışma kitabını doğrular ve metin tanımlayıcılarını korur", async () => {
@@ -76,6 +78,28 @@ describe("Excel eşleştirmesi", () => {
     expect(parsed[0].validation_errors).toEqual([]);
     expect(parsed[0].phone_numbers).toContain("\n");
     expect(parsed[0].row_color).toBeNull();
+    expect(parsed[0].gift).toBe(true);
+  });
+
+  it("HEDİYE sütunu olmayan özgün Excel dosyalarını kabul eder", async () => {
+    const excelRow = recordToExcelRow(record) as Record<string, unknown>;
+    delete excelRow.HEDİYE;
+    const originalHeaders = EXCEL_HEADERS.filter((header) => header !== "HEDİYE");
+    const sheet = XLSX.utils.json_to_sheet([excelRow], {
+      header: originalHeaders,
+    });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, "MOBİLYA TOP. VE PERAKENDE");
+    const buffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    }) as ArrayBuffer;
+    const file = { arrayBuffer: async () => buffer } as File;
+
+    const parsed = await parseWorkbook(file);
+
+    expect(parsed[0].gift).toBe(false);
+    expect(parsed[0].validation_errors).toEqual([]);
   });
 
   it("TEMAS 5 ve sonraki sütunları yeniden içe aktarır", async () => {

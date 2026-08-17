@@ -228,6 +228,7 @@ export function RecordsTable({
   const [selected, setSelected] = useState<FurnitureRecord | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [coloringId, setColoringId] = useState<string | null>(null);
+  const [giftingId, setGiftingId] = useState<string | null>(null);
   const contactColumnCount = useMemo(
     () =>
       Math.max(
@@ -304,6 +305,22 @@ export function RecordsTable({
       )),
       { ...makeColumn("origin", "KÖKEN", 120), filterFn: multiFilter },
       { ...makeColumn("vote_status", "OY DURUMU", 130), filterFn: multiFilter },
+      {
+        ...makeColumn("gift", "Hediye", 90, ({ row }) => (
+          <input
+            type="checkbox"
+            checked={Boolean(row.original.gift)}
+            disabled={!editable || giftingId === row.original.id}
+            className="h-5 w-5 cursor-pointer rounded border accent-primary disabled:cursor-default"
+            aria-label={`${row.original.title} hediye durumu`}
+            onClick={(event) => event.stopPropagation()}
+            onChange={(event) =>
+              void changeGift(row.original, event.target.checked)
+            }
+          />
+        )),
+        enableColumnFilter: false,
+      },
       ...Array.from({ length: contactColumnCount }, (_, index) => index + 1).map(
         (position): ColumnDef<FurnitureRecord> => ({
           id: `contact_${position}`,
@@ -383,7 +400,7 @@ export function RecordsTable({
         ),
       },
     ],
-    [editable, deletingId, coloringId, contactColumnCount],
+    [editable, deletingId, coloringId, giftingId, contactColumnCount],
   );
 
   const table = useReactTable({
@@ -410,6 +427,7 @@ export function RecordsTable({
           record.officials,
           record.origin,
           record.vote_status,
+          record.gift ? "hediye" : "",
           ...contactsForRecord(record),
           record.notes,
           record.district,
@@ -474,6 +492,28 @@ export function RecordsTable({
       return;
     }
     toast.success(`Satır rengi ${color ? colorLabels[color] : "Renksiz"} olarak değiştirildi.`);
+    onRefresh();
+  }
+
+  async function changeGift(record: FurnitureRecord, gift: boolean) {
+    if (record.gift === gift) return;
+    setGiftingId(record.id);
+    const { error } = await createClient().rpc("set_record_gift", {
+      p_id: record.id,
+      p_expected_version: record.version,
+      p_gift: gift,
+    });
+    setGiftingId(null);
+    if (error) {
+      toast.error(
+        error.code === "40001" || error.message.includes("VERSION_CONFLICT")
+          ? "Kayıt başka bir kullanıcı tarafından değiştirildi; liste yenilendi."
+          : `Hediye durumu değiştirilemedi: ${error.message}`,
+      );
+      onRefresh();
+      return;
+    }
+    toast.success(gift ? "Hediye işaretlendi." : "Hediye işareti kaldırıldı.");
     onRefresh();
   }
 
@@ -813,6 +853,20 @@ export function RecordsTable({
                     </dd>
                     <dt className="text-muted-foreground">Renk</dt>
                     <dd>{colorLabels[record.row_color ?? ""]}</dd>
+                    <dt className="text-muted-foreground">Hediye</dt>
+                    <dd className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(record.gift)}
+                        disabled={!editable || giftingId === record.id}
+                        className="h-5 w-5 cursor-pointer rounded border accent-primary disabled:cursor-default"
+                        aria-label={`${record.title} hediye durumu`}
+                        onChange={(event) =>
+                          void changeGift(record, event.target.checked)
+                        }
+                      />
+                      <span>{record.gift ? "Evet" : "Hayır"}</span>
+                    </dd>
                   </dl>
                   {!isAnonymous && (
                     <details className="group mt-4 border-t pt-3">

@@ -22,6 +22,7 @@ export const EXCEL_HEADERS = [
   "CADDE",
   "Tescil Adresi",
   "Telefon Numaraları",
+  "HEDİYE",
 ] as const;
 
 export interface ParsedExcelRow extends RecordPayload {
@@ -73,6 +74,7 @@ export function recordToExcelRow(record: FurnitureRecord) {
     CADDE: record.street ?? "",
     "Tescil Adresi": record.registered_address,
     "Telefon Numaraları": record.phone_numbers,
+    HEDİYE: record.gift ? "EVET" : "",
   };
 }
 
@@ -87,7 +89,7 @@ const sourceColumnWidths = [
   6.5, 7.79, 8.07, 13.07, 8.79, 33.07, 32.79, 11.5, 33.07,
 ] as const;
 
-const trailingColumnWidths = [51.64, 19.64, 19.93, 36.64, 33.5] as const;
+const trailingColumnWidths = [51.64, 19.64, 19.93, 36.64, 33.5, 10] as const;
 
 function estimatedLineCount(value: unknown, width: number) {
   const charactersPerLine = Math.max(4, Math.floor(width * 0.85));
@@ -227,7 +229,9 @@ export async function parseWorkbook(file: File): Promise<ParsedExcelRow[]> {
     raw: false,
   });
   const actualHeaders = Object.keys(rows[0] ?? {});
-  const missing = EXCEL_HEADERS.filter((header) => !actualHeaders.includes(header));
+  const missing = EXCEL_HEADERS.filter(
+    (header) => header !== "HEDİYE" && !actualHeaders.includes(header),
+  );
   if (missing.length) throw new Error(`Eksik sütunlar: ${missing.join(", ")}`);
 
   return rows.map((row, index) => {
@@ -270,6 +274,9 @@ export async function parseWorkbook(file: File): Promise<ParsedExcelRow[]> {
       street: cell(row, "CADDE"),
       registered_address: cell(row, "Tescil Adresi") ?? "",
       phone_numbers: cell(row, "Telefon Numaraları") ?? "",
+      gift: ["EVET", "VAR", "TRUE", "1", "X", "✓"].includes(
+        (cell(row, "HEDİYE") ?? "").toLocaleUpperCase("tr-TR"),
+      ),
       row_color: readRowColor(sheet, rowNumber),
       contact_names: contactNames,
       validation_errors: errors,

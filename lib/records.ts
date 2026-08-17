@@ -20,6 +20,7 @@ type PublicRecordRow = Pick<
   | "status"
   | "title"
   | "district"
+  | "gift"
   | "row_color"
   | "version"
   | "updated_at"
@@ -50,6 +51,7 @@ export async function fetchAllRecords(includeDeleted = false): Promise<Furniture
       street: null,
       registered_address: "",
       phone_numbers: "",
+      gift: record.gift ?? false,
       row_color: record.row_color,
       version: record.version,
       created_at: record.updated_at,
