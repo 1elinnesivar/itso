@@ -542,7 +542,7 @@ export function RecordsTable({
         options={[
           {
             value: INDUSTRY_TRADE_LIMITED_TITLE,
-            label: "San ve Tic LTD ŞTİ",
+            label: "Sanayi ve Ticaret Limited Şirketi",
           },
           { value: OTHER_COMPANY_TITLE, label: "Diğer" },
         ]}

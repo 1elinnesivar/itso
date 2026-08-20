@@ -8,20 +8,19 @@ import {
 
 describe("Ünvan türü filtresi", () => {
   it("tam yazılan sanayi ve ticaret limited şirketi ünvanını bulur", () => {
-    expect(
-      isIndustryTradeLimitedTitle(
-        "ÖRNEK MOBİLYA SANAYİ VE TİCARET LİMİTED ŞİRKETİ",
-      ),
-    ).toBe(true);
+    const title = "ÖRNEK MOBİLYA SANAYİ VE TİCARET LİMİTED ŞİRKETİ";
+
+    expect(isIndustryTradeLimitedTitle(title)).toBe(true);
+    expect(companyTitleCategory(title)).toBe(INDUSTRY_TRADE_LIMITED_TITLE);
   });
 
-  it("yaygın kısaltmaları aynı gruba alır", () => {
+  it("kısaltmaları açık ünvan grubuna almaz", () => {
     expect(
       isIndustryTradeLimitedTitle("ÖRNEK MOBİLYA SAN. VE TİC. LTD. ŞTİ."),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       companyTitleCategory("ÖRNEK MOBİLYA SAN TİC LTD ŞTİ"),
-    ).toBe(INDUSTRY_TRADE_LIMITED_TITLE);
+    ).toBe(OTHER_COMPANY_TITLE);
   });
 
   it("ifadeyi içermeyen ünvanları diğer grubuna alır", () => {
