@@ -45,6 +45,7 @@ import {
   companyTitleCategory,
   JOINT_STOCK_COMPANY_TITLE,
   LIMITED_COMPANY_TITLE,
+  SOLE_PROPRIETORSHIP_TITLE,
   UNKNOWN_COMPANY_TITLE,
 } from "@/lib/company-title";
 import { exportRecords } from "@/lib/excel/records";
@@ -310,7 +311,8 @@ export function RecordsTable({
       )),
       {
         id: "title_type_filter",
-        accessorFn: (record) => companyTitleCategory(record.title),
+        accessorFn: (record) =>
+          companyTitleCategory(record.title, record.officials),
         header: "Ünvan Türü",
         filterFn: multiFilter,
         enableHiding: false,
@@ -538,21 +540,27 @@ export function RecordsTable({
 
   const renderMultiFilters = () => (
     <>
-      <MultiSelectFilter
-        label="Ünvan Türü"
-        options={[
-          {
-            value: LIMITED_COMPANY_TITLE,
-            label: "Limited Şirket",
-          },
-          { value: JOINT_STOCK_COMPANY_TITLE, label: "Anonim Şirket" },
-          { value: UNKNOWN_COMPANY_TITLE, label: "Bilinmeyen" },
-        ]}
-        value={filterValue("title_type_filter")}
-        onChange={(value) =>
-          table.getColumn("title_type_filter")?.setFilterValue(value)
-        }
-      />
+      {!isAnonymous && (
+        <MultiSelectFilter
+          label="Firma Türü"
+          options={[
+            {
+              value: SOLE_PROPRIETORSHIP_TITLE,
+              label: "Şahıs Firması (Tahmini)",
+            },
+            {
+              value: LIMITED_COMPANY_TITLE,
+              label: "Limited Şirket",
+            },
+            { value: JOINT_STOCK_COMPANY_TITLE, label: "Anonim Şirket" },
+            { value: UNKNOWN_COMPANY_TITLE, label: "Bilinmeyen" },
+          ]}
+          value={filterValue("title_type_filter")}
+          onChange={(value) =>
+            table.getColumn("title_type_filter")?.setFilterValue(value)
+          }
+        />
+      )}
       <MultiSelectFilter
         label="Durumu"
         options={optionsFor("status")}
