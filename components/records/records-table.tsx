@@ -42,11 +42,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  COMPANY_TITLE,
   companyTitleCategory,
-  JOINT_STOCK_COMPANY_TITLE,
-  LIMITED_COMPANY_TITLE,
   SOLE_PROPRIETORSHIP_TITLE,
-  UNKNOWN_COMPANY_TITLE,
 } from "@/lib/company-title";
 import { exportRecords } from "@/lib/excel/records";
 import {
@@ -546,14 +544,12 @@ export function RecordsTable({
           options={[
             {
               value: SOLE_PROPRIETORSHIP_TITLE,
-              label: "Şahıs Firması (Tahmini)",
+              label: "Şahıs",
             },
             {
-              value: LIMITED_COMPANY_TITLE,
-              label: "Limited Şirket",
+              value: COMPANY_TITLE,
+              label: "Şirketler",
             },
-            { value: JOINT_STOCK_COMPANY_TITLE, label: "Anonim Şirket" },
-            { value: UNKNOWN_COMPANY_TITLE, label: "Bilinmeyen" },
           ]}
           value={filterValue("title_type_filter")}
           onChange={(value) =>

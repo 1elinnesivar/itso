@@ -1,13 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  COMPANY_TITLE,
   companyTitleCategory,
   isJointStockCompanyTitle,
   isLimitedCompanyTitle,
   isProbableSoleProprietorship,
-  JOINT_STOCK_COMPANY_TITLE,
-  LIMITED_COMPANY_TITLE,
   SOLE_PROPRIETORSHIP_TITLE,
-  UNKNOWN_COMPANY_TITLE,
 } from "@/lib/company-title";
 
 describe("Ünvan türü filtresi", () => {
@@ -15,21 +13,21 @@ describe("Ünvan türü filtresi", () => {
     const title = "ÖRNEK MOBİLYA SANAYİ VE TİCARET LİMİTED ŞİRKETİ";
 
     expect(isLimitedCompanyTitle(title)).toBe(true);
-    expect(companyTitleCategory(title)).toBe(LIMITED_COMPANY_TITLE);
+    expect(companyTitleCategory(title)).toBe(COMPANY_TITLE);
   });
 
   it("ticaret ve sanayi sırasıyla yazılan ünvanı da bulur", () => {
     const title = "ÖRNEK MOBİLYA TİCARET VE SANAYİ LİMİTED ŞİRKETİ";
 
     expect(isLimitedCompanyTitle(title)).toBe(true);
-    expect(companyTitleCategory(title)).toBe(LIMITED_COMPANY_TITLE);
+    expect(companyTitleCategory(title)).toBe(COMPANY_TITLE);
   });
 
   it("sanayi veya ticaret ifadesi olmasa da limited şirketi bulur", () => {
     const title = "ÖRNEK MOBİLYA PAZARLAMA LİMİTED ŞİRKETİ";
 
     expect(isLimitedCompanyTitle(title)).toBe(true);
-    expect(companyTitleCategory(title)).toBe(LIMITED_COMPANY_TITLE);
+    expect(companyTitleCategory(title)).toBe(COMPANY_TITLE);
   });
 
   it("kısaltmaları açık ünvan grubuna almaz", () => {
@@ -38,20 +36,18 @@ describe("Ünvan türü filtresi", () => {
     ).toBe(false);
     expect(
       companyTitleCategory("ÖRNEK MOBİLYA SAN TİC LTD ŞTİ"),
-    ).toBe(UNKNOWN_COMPANY_TITLE);
+    ).toBe(COMPANY_TITLE);
   });
 
   it("anonim şirketleri ayrı gruba alır", () => {
     const title = "ÖRNEK MOBİLYA SANAYİ VE TİCARET ANONİM ŞİRKETİ";
 
     expect(isJointStockCompanyTitle(title)).toBe(true);
-    expect(companyTitleCategory(title)).toBe(JOINT_STOCK_COMPANY_TITLE);
+    expect(companyTitleCategory(title)).toBe(COMPANY_TITLE);
   });
 
-  it("iki açık şirket ibaresini içermeyen ünvanları bilinmeyen gruba alır", () => {
-    expect(companyTitleCategory("ÖRNEK MOBİLYA")).toBe(
-      UNKNOWN_COMPANY_TITLE,
-    );
+  it("şahıs kuralına uymayan diğer ünvanları şirketler grubuna alır", () => {
+    expect(companyTitleCategory("ÖRNEK MOBİLYA")).toBe(COMPANY_TITLE);
   });
 
   it("yetkili adı ünvanda geçen kaydı tahmini şahıs firması olarak ayırır", () => {
@@ -75,7 +71,7 @@ describe("Ünvan türü filtresi", () => {
         "AHMET YILMAZ MOBİLYA ANONİM ŞİRKETİ",
         "AHMET YILMAZ",
       ),
-    ).toBe(JOINT_STOCK_COMPANY_TITLE);
+    ).toBe(COMPANY_TITLE);
   });
 
   it("tek kelimelik yetkili değerini şahıs eşleşmesi kabul etmez", () => {
