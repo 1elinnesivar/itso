@@ -41,6 +41,11 @@ import { RecordFormDialog } from "@/components/forms/record-form-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  companyTitleCategory,
+  INDUSTRY_TRADE_LIMITED_TITLE,
+  OTHER_COMPANY_TITLE,
+} from "@/lib/company-title";
 import { exportRecords } from "@/lib/excel/records";
 import {
   contactsForRecord,
@@ -222,6 +227,7 @@ export function RecordsTable({
     ...publicHiddenColumns,
     contact_owner: false,
     row_color_filter: false,
+    title_type_filter: false,
   });
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 25 });
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -266,6 +272,7 @@ export function RecordsTable({
           ...publicHiddenColumns,
           contact_owner: false,
           row_color_filter: false,
+          title_type_filter: false,
         });
       }
       if ([25, 50, 100].includes(saved.pageSize ?? 0)) {
@@ -300,6 +307,13 @@ export function RecordsTable({
       makeColumn("title", "Unvan", 360, ({ getValue }) => (
         <span className="line-clamp-2 font-medium">{String(getValue())}</span>
       )),
+      {
+        id: "title_type_filter",
+        accessorFn: (record) => companyTitleCategory(record.title),
+        header: "Ünvan Türü",
+        filterFn: multiFilter,
+        enableHiding: false,
+      },
       makeColumn("officials", "Yetkililer", 210, ({ getValue }) => (
         <span className="whitespace-pre-line">{String(getValue() ?? "")}</span>
       )),
@@ -524,6 +538,20 @@ export function RecordsTable({
   const renderMultiFilters = () => (
     <>
       <MultiSelectFilter
+        label="Ünvan Türü"
+        options={[
+          {
+            value: INDUSTRY_TRADE_LIMITED_TITLE,
+            label: "San ve Tic LTD ŞTİ",
+          },
+          { value: OTHER_COMPANY_TITLE, label: "Diğer" },
+        ]}
+        value={filterValue("title_type_filter")}
+        onChange={(value) =>
+          table.getColumn("title_type_filter")?.setFilterValue(value)
+        }
+      />
+      <MultiSelectFilter
         label="Durumu"
         options={optionsFor("status")}
         value={filterValue("status")}
@@ -675,7 +703,11 @@ export function RecordsTable({
                   .filter(
                     (column) =>
                       column.getCanHide() &&
-                      !["contact_owner", "row_color_filter"].includes(column.id),
+                      ![
+                        "contact_owner",
+                        "row_color_filter",
+                        "title_type_filter",
+                      ].includes(column.id),
                   )
                   .map((column) => (
                     <DropdownMenu.CheckboxItem
@@ -743,7 +775,11 @@ export function RecordsTable({
                     {headerGroup.headers
                       .filter(
                         (header) =>
-                          !["contact_owner", "row_color_filter"].includes(header.column.id),
+                          ![
+                            "contact_owner",
+                            "row_color_filter",
+                            "title_type_filter",
+                          ].includes(header.column.id),
                       )
                       .map((header) => (
                         <th
@@ -779,7 +815,11 @@ export function RecordsTable({
                       .getVisibleCells()
                       .filter(
                         (cell) =>
-                          !["contact_owner", "row_color_filter"].includes(cell.column.id),
+                          ![
+                            "contact_owner",
+                            "row_color_filter",
+                            "title_type_filter",
+                          ].includes(cell.column.id),
                       )
                       .map((cell) => (
                         <td
