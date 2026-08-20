@@ -43,8 +43,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   companyTitleCategory,
+  JOINT_STOCK_COMPANY_TITLE,
   LIMITED_COMPANY_TITLE,
-  OTHER_COMPANY_TITLE,
+  UNKNOWN_COMPANY_TITLE,
 } from "@/lib/company-title";
 import { exportRecords } from "@/lib/excel/records";
 import {
@@ -544,7 +545,8 @@ export function RecordsTable({
             value: LIMITED_COMPANY_TITLE,
             label: "Limited Şirket",
           },
-          { value: OTHER_COMPANY_TITLE, label: "Diğer" },
+          { value: JOINT_STOCK_COMPANY_TITLE, label: "Anonim Şirket" },
+          { value: UNKNOWN_COMPANY_TITLE, label: "Bilinmeyen" },
         ]}
         value={filterValue("title_type_filter")}
         onChange={(value) =>
