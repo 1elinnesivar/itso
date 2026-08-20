@@ -14,6 +14,13 @@ describe("Ünvan türü filtresi", () => {
     expect(companyTitleCategory(title)).toBe(INDUSTRY_TRADE_LIMITED_TITLE);
   });
 
+  it("ticaret ve sanayi sırasıyla yazılan açık ünvanı da bulur", () => {
+    const title = "ÖRNEK MOBİLYA TİCARET VE SANAYİ LİMİTED ŞİRKETİ";
+
+    expect(isIndustryTradeLimitedTitle(title)).toBe(true);
+    expect(companyTitleCategory(title)).toBe(INDUSTRY_TRADE_LIMITED_TITLE);
+  });
+
   it("kısaltmaları açık ünvan grubuna almaz", () => {
     expect(
       isIndustryTradeLimitedTitle("ÖRNEK MOBİLYA SAN. VE TİC. LTD. ŞTİ."),
