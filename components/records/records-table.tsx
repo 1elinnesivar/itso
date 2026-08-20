@@ -43,7 +43,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   companyTitleCategory,
-  INDUSTRY_TRADE_LIMITED_TITLE,
+  LIMITED_COMPANY_TITLE,
   OTHER_COMPANY_TITLE,
 } from "@/lib/company-title";
 import { exportRecords } from "@/lib/excel/records";
@@ -541,8 +541,8 @@ export function RecordsTable({
         label="Ünvan Türü"
         options={[
           {
-            value: INDUSTRY_TRADE_LIMITED_TITLE,
-            label: "Sanayi ve Ticaret Limited Şirketi",
+            value: LIMITED_COMPANY_TITLE,
+            label: "Limited Şirket",
           },
           { value: OTHER_COMPANY_TITLE, label: "Diğer" },
         ]}

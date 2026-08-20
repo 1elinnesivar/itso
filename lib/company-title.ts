@@ -1,18 +1,14 @@
 import { normalizeText } from "@/lib/utils";
 
-export const INDUSTRY_TRADE_LIMITED_TITLE = "industry_trade_limited";
+export const LIMITED_COMPANY_TITLE = "limited_company";
 export const OTHER_COMPANY_TITLE = "other";
 
-export function isIndustryTradeLimitedTitle(title: string): boolean {
-  const normalizedTitle = normalizeText(title);
-  return [
-    "SANAYİ VE TİCARET LİMİTED ŞİRKETİ",
-    "TİCARET VE SANAYİ LİMİTED ŞİRKETİ",
-  ].some((phrase) => normalizedTitle.includes(normalizeText(phrase)));
+export function isLimitedCompanyTitle(title: string): boolean {
+  return normalizeText(title).includes(normalizeText("LİMİTED ŞİRKETİ"));
 }
 
 export function companyTitleCategory(title: string): string {
-  return isIndustryTradeLimitedTitle(title)
-    ? INDUSTRY_TRADE_LIMITED_TITLE
+  return isLimitedCompanyTitle(title)
+    ? LIMITED_COMPANY_TITLE
     : OTHER_COMPANY_TITLE;
 }

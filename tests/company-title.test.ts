@@ -1,29 +1,36 @@
 import { describe, expect, it } from "vitest";
 import {
   companyTitleCategory,
-  INDUSTRY_TRADE_LIMITED_TITLE,
-  isIndustryTradeLimitedTitle,
+  isLimitedCompanyTitle,
+  LIMITED_COMPANY_TITLE,
   OTHER_COMPANY_TITLE,
 } from "@/lib/company-title";
 
 describe("Ünvan türü filtresi", () => {
-  it("tam yazılan sanayi ve ticaret limited şirketi ünvanını bulur", () => {
+  it("sanayi ve ticaret limited şirketi ünvanını bulur", () => {
     const title = "ÖRNEK MOBİLYA SANAYİ VE TİCARET LİMİTED ŞİRKETİ";
 
-    expect(isIndustryTradeLimitedTitle(title)).toBe(true);
-    expect(companyTitleCategory(title)).toBe(INDUSTRY_TRADE_LIMITED_TITLE);
+    expect(isLimitedCompanyTitle(title)).toBe(true);
+    expect(companyTitleCategory(title)).toBe(LIMITED_COMPANY_TITLE);
   });
 
-  it("ticaret ve sanayi sırasıyla yazılan açık ünvanı da bulur", () => {
+  it("ticaret ve sanayi sırasıyla yazılan ünvanı da bulur", () => {
     const title = "ÖRNEK MOBİLYA TİCARET VE SANAYİ LİMİTED ŞİRKETİ";
 
-    expect(isIndustryTradeLimitedTitle(title)).toBe(true);
-    expect(companyTitleCategory(title)).toBe(INDUSTRY_TRADE_LIMITED_TITLE);
+    expect(isLimitedCompanyTitle(title)).toBe(true);
+    expect(companyTitleCategory(title)).toBe(LIMITED_COMPANY_TITLE);
+  });
+
+  it("sanayi veya ticaret ifadesi olmasa da limited şirketi bulur", () => {
+    const title = "ÖRNEK MOBİLYA PAZARLAMA LİMİTED ŞİRKETİ";
+
+    expect(isLimitedCompanyTitle(title)).toBe(true);
+    expect(companyTitleCategory(title)).toBe(LIMITED_COMPANY_TITLE);
   });
 
   it("kısaltmaları açık ünvan grubuna almaz", () => {
     expect(
-      isIndustryTradeLimitedTitle("ÖRNEK MOBİLYA SAN. VE TİC. LTD. ŞTİ."),
+      isLimitedCompanyTitle("ÖRNEK MOBİLYA SAN. VE TİC. LTD. ŞTİ."),
     ).toBe(false);
     expect(
       companyTitleCategory("ÖRNEK MOBİLYA SAN TİC LTD ŞTİ"),
