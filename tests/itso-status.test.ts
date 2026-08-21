@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  AT_ITSO_STATUS,
   countItsoApproved,
+  countRecordsByItsoStatus,
   ITSO_APPROVED_STATUS,
   ITSO_STATUS_OPTIONS,
 } from "@/lib/itso-status";
@@ -19,5 +21,6 @@ describe("İTSO durumu", () => {
     ];
 
     expect(countItsoApproved(records)).toBe(2);
+    expect(countRecordsByItsoStatus(records, AT_ITSO_STATUS)).toBe(1);
   });
 });

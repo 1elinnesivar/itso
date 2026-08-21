@@ -48,7 +48,9 @@ import {
 } from "@/lib/company-title";
 import { exportRecords } from "@/lib/excel/records";
 import {
+  AT_ITSO_STATUS,
   countItsoApproved,
+  countRecordsByItsoStatus,
   ITSO_STATUS_OPTIONS,
 } from "@/lib/itso-status";
 import {
@@ -267,6 +269,10 @@ export function RecordsTable({
   );
   const itsoApprovedCount = useMemo(
     () => countItsoApproved(records),
+    [records],
+  );
+  const atItsoCount = useMemo(
+    () => countRecordsByItsoStatus(records, AT_ITSO_STATUS),
     [records],
   );
 
@@ -682,7 +688,7 @@ export function RecordsTable({
   return (
     <>
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-1.5 md:grid-cols-8 md:gap-2">
+        <div className="grid grid-cols-2 gap-1.5 md:grid-cols-10 md:gap-2">
           <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600" />
             <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
@@ -728,7 +734,16 @@ export function RecordsTable({
               {authorizationDocumentCount}
             </span>
           </div>
-          <div className="col-span-2 flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+          <div className="col-span-1 flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm md:col-span-2">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-600" />
+            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+              İTSO'da
+            </span>
+            <span className="text-sm font-bold tabular-nums text-cyan-700">
+              {atItsoCount}
+            </span>
+          </div>
+          <div className="col-span-1 flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm md:col-span-2">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-violet-600" />
             <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
               İTSO Onaylandı
