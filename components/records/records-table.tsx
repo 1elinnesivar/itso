@@ -86,6 +86,7 @@ const colorLabels = {
   yellow: "Sarı",
   green: "Yeşil",
   red: "Kırmızı",
+  blue: "Mavi",
   "": "Renksiz",
 } as const;
 
@@ -98,6 +99,9 @@ function rowColorClasses(color: FurnitureRecord["row_color"]) {
   }
   if (color === "red") {
     return "border-l-4 border-l-red-600 bg-red-100 hover:bg-red-200";
+  }
+  if (color === "blue") {
+    return "border-l-4 border-l-blue-600 bg-blue-100 hover:bg-blue-200";
   }
   return "hover:bg-muted/50";
 }
@@ -116,6 +120,7 @@ function ColorMenu({
     { value: "yellow", label: "Sarı", dot: "bg-yellow-400" },
     { value: "green", label: "Yeşil", dot: "bg-green-600" },
     { value: "red", label: "Kırmızı", dot: "bg-red-600" },
+    { value: "blue", label: "Mavi", dot: "bg-blue-600" },
   ] as const;
 
   return (
@@ -259,7 +264,7 @@ export function RecordsTable({
           counts[record.row_color ?? "none"] += 1;
           return counts;
         },
-        { red: 0, yellow: 0, green: 0, none: 0 },
+        { red: 0, yellow: 0, green: 0, blue: 0, none: 0 },
       ),
     [records],
   );
@@ -677,6 +682,7 @@ export function RecordsTable({
           { value: "yellow", label: "Sarı" },
           { value: "green", label: "Yeşil" },
           { value: "red", label: "Kırmızı" },
+          { value: "blue", label: "Mavi" },
           { value: "", label: "Renksiz" },
         ]}
         value={filterValue("row_color_filter")}
@@ -688,7 +694,7 @@ export function RecordsTable({
   return (
     <>
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-1.5 md:grid-cols-10 md:gap-2">
+        <div className="grid grid-cols-2 gap-1.5 md:grid-cols-12 md:gap-2">
           <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600" />
             <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
@@ -717,6 +723,15 @@ export function RecordsTable({
             </span>
           </div>
           <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-blue-600" />
+            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+              Mavi
+            </span>
+            <span className="text-sm font-bold tabular-nums text-blue-700">
+              {colorCounts.blue}
+            </span>
+          </div>
+          <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full border bg-muted" />
             <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
               Renksiz
@@ -725,12 +740,12 @@ export function RecordsTable({
               {colorCounts.none}
             </span>
           </div>
-          <div className="col-span-2 flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
-            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-blue-600" />
+          <div className="col-span-2 flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm md:col-span-3">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-slate-600" />
             <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
               Yetki Belgesi Alındı
             </span>
-            <span className="text-sm font-bold tabular-nums text-blue-700">
+            <span className="text-sm font-bold tabular-nums text-slate-700">
               {authorizationDocumentCount}
             </span>
           </div>

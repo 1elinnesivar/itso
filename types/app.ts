@@ -1,5 +1,5 @@
 export type AppRole = "admin" | "editor" | "viewer";
-export type RowColor = "yellow" | "green" | "red" | null;
+export type RowColor = "yellow" | "green" | "red" | "blue" | null;
 
 export interface ContactPerson {
   id: string;

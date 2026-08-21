@@ -178,4 +178,15 @@ describe("Excel eşleştirmesi", () => {
     } as XLSX.WorkSheet;
     expect(readRowColor(sheet, 2)).toBe("yellow");
   });
+
+  it("Excel mavi satır dolgu rengini sınıflandırır", () => {
+    const sheet = {
+      A2: {
+        t: "n",
+        v: 1,
+        s: { patternType: "solid", fgColor: { rgb: "00B0F0" } },
+      },
+    } as XLSX.WorkSheet;
+    expect(readRowColor(sheet, 2)).toBe("blue");
+  });
 });

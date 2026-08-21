@@ -36,6 +36,7 @@ const rowColorToRgb: Record<Exclude<RowColor, null>, string> = {
   yellow: "FFFF00",
   green: "00B050",
   red: "FF0000",
+  blue: "00B0F0",
 };
 
 export function readRowColor(sheet: XLSX.WorkSheet, rowNumber: number): RowColor {
@@ -47,6 +48,9 @@ export function readRowColor(sheet: XLSX.WorkSheet, rowNumber: number): RowColor
   if (rgb === "FFFF00") return "yellow";
   if (rgb === "00B050") return "green";
   if (rgb === "FF0000") return "red";
+  if (["00B0F0", "5B9BD5", "4472C4", "0000FF"].includes(rgb)) {
+    return "blue";
+  }
   return null;
 }
 
