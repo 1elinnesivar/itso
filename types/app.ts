@@ -34,6 +34,7 @@ export interface FurnitureRecord {
   registered_address: string;
   phone_numbers: string;
   gift: boolean;
+  itso_status: string | null;
   row_color: RowColor;
   version: number;
   created_at: string;

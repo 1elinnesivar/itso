@@ -26,6 +26,7 @@ const record: FurnitureRecord = {
   registered_address: "Örnek adres",
   phone_numbers: "0555 000 00 00\n0224 000 00 00",
   gift: true,
+  itso_status: "ONAYLANDI",
   row_color: "yellow",
   version: 1,
   created_at: "2026-01-01T00:00:00Z",
@@ -79,6 +80,7 @@ describe("Excel eşleştirmesi", () => {
     expect(parsed[0].phone_numbers).toContain("\n");
     expect(parsed[0].row_color).toBeNull();
     expect(parsed[0].gift).toBe(true);
+    expect(parsed[0].itso_status).toBeNull();
   });
 
   it("HEDİYE sütunu olmayan özgün Excel dosyalarını kabul eder", async () => {

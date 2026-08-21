@@ -48,6 +48,10 @@ import {
 } from "@/lib/company-title";
 import { exportRecords } from "@/lib/excel/records";
 import {
+  countItsoApproved,
+  ITSO_STATUS_OPTIONS,
+} from "@/lib/itso-status";
+import {
   contactsForRecord,
   recordMatchesContactFilter,
   UNASSIGNED_CONTACT_FILTER_VALUE,
@@ -235,6 +239,7 @@ export function RecordsTable({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [coloringId, setColoringId] = useState<string | null>(null);
   const [giftingId, setGiftingId] = useState<string | null>(null);
+  const [updatingItsoId, setUpdatingItsoId] = useState<string | null>(null);
   const contactColumnCount = useMemo(
     () =>
       Math.max(
@@ -258,6 +263,10 @@ export function RecordsTable({
   );
   const authorizationDocumentCount = useMemo(
     () => countRecordsByVoteStatus(records, AUTHORIZATION_DOCUMENT_RECEIVED),
+    [records],
+  );
+  const itsoApprovedCount = useMemo(
+    () => countItsoApproved(records),
     [records],
   );
 
@@ -335,6 +344,28 @@ export function RecordsTable({
           />
         )),
         enableColumnFilter: false,
+      },
+      {
+        ...makeColumn("itso_status", "İTSO", 120, ({ row }) => (
+          <select
+            value={row.original.itso_status ?? ""}
+            disabled={!editable || updatingItsoId === row.original.id}
+            className="h-8 w-full min-w-24 rounded-md border bg-background px-2 text-xs disabled:cursor-default disabled:opacity-100"
+            aria-label={`${row.original.title} İTSO durumu`}
+            onClick={(event) => event.stopPropagation()}
+            onChange={(event) =>
+              void changeItsoStatus(row.original, event.target.value || null)
+            }
+          >
+            <option value="">—</option>
+            {ITSO_STATUS_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        )),
+        filterFn: multiFilter,
       },
       ...Array.from({ length: contactColumnCount }, (_, index) => index + 1).map(
         (position): ColumnDef<FurnitureRecord> => ({
@@ -415,7 +446,7 @@ export function RecordsTable({
         ),
       },
     ],
-    [editable, deletingId, coloringId, giftingId, contactColumnCount],
+    [editable, deletingId, coloringId, giftingId, updatingItsoId, contactColumnCount],
   );
 
   const table = useReactTable({
@@ -443,6 +474,7 @@ export function RecordsTable({
           record.origin,
           record.vote_status,
           record.gift ? "hediye" : "",
+          record.itso_status,
           ...contactsForRecord(record),
           record.notes,
           record.district,
@@ -532,6 +564,31 @@ export function RecordsTable({
     onRefresh();
   }
 
+  async function changeItsoStatus(
+    record: FurnitureRecord,
+    itsoStatus: string | null,
+  ) {
+    if (record.itso_status === itsoStatus) return;
+    setUpdatingItsoId(record.id);
+    const { error } = await createClient().rpc("set_record_itso_status", {
+      p_id: record.id,
+      p_expected_version: record.version,
+      p_itso_status: itsoStatus,
+    });
+    setUpdatingItsoId(null);
+    if (error) {
+      toast.error(
+        error.code === "40001" || error.message.includes("VERSION_CONFLICT")
+          ? "Kayıt başka bir kullanıcı tarafından değiştirildi; liste yenilendi."
+          : `İTSO durumu değiştirilemedi: ${error.message}`,
+      );
+      onRefresh();
+      return;
+    }
+    toast.success(`İTSO durumu ${itsoStatus ?? "boş"} olarak güncellendi.`);
+    onRefresh();
+  }
+
   const filterValue = (id: string) => (table.getColumn(id)?.getFilterValue() as string[]) ?? [];
   const filteredRecords = table.getFilteredRowModel().rows.map((row) => row.original);
   const sortedFilteredRecords = table.getSortedRowModel().rows.map((row) => row.original);
@@ -585,6 +642,12 @@ export function RecordsTable({
         value={filterValue("district")}
         onChange={(value) => table.getColumn("district")?.setFilterValue(value)}
       />
+      <MultiSelectFilter
+        label="İTSO"
+        options={optionsFor("itso_status")}
+        value={filterValue("itso_status")}
+        onChange={(value) => table.getColumn("itso_status")?.setFilterValue(value)}
+      />
       {!isAnonymous && (
         <MultiSelectFilter
           label="Temas sorumlusu"
@@ -619,7 +682,7 @@ export function RecordsTable({
   return (
     <>
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-1.5 md:grid-cols-6 md:gap-2">
+        <div className="grid grid-cols-2 gap-1.5 md:grid-cols-8 md:gap-2">
           <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600" />
             <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
@@ -663,6 +726,15 @@ export function RecordsTable({
             </span>
             <span className="text-sm font-bold tabular-nums text-blue-700">
               {authorizationDocumentCount}
+            </span>
+          </div>
+          <div className="col-span-2 flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-violet-600" />
+            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+              İTSO Onaylandı
+            </span>
+            <span className="text-sm font-bold tabular-nums text-violet-700">
+              {itsoApprovedCount}
             </span>
           </div>
         </div>
@@ -912,6 +984,25 @@ export function RecordsTable({
                         }
                       />
                       <span>{record.gift ? "Evet" : "Hayır"}</span>
+                    </dd>
+                    <dt className="text-muted-foreground">İTSO</dt>
+                    <dd className="flex items-center gap-2">
+                      <select
+                        value={record.itso_status ?? ""}
+                        disabled={!editable || updatingItsoId === record.id}
+                        className="h-9 rounded-md border bg-background px-2 text-sm disabled:opacity-100"
+                        aria-label={`${record.title} İTSO durumu`}
+                        onChange={(event) =>
+                          void changeItsoStatus(record, event.target.value || null)
+                        }
+                      >
+                        <option value="">—</option>
+                        {ITSO_STATUS_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
                     </dd>
                   </dl>
                   {!isAnonymous && (

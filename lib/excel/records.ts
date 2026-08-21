@@ -277,6 +277,7 @@ export async function parseWorkbook(file: File): Promise<ParsedExcelRow[]> {
       gift: ["EVET", "VAR", "TRUE", "1", "X", "✓"].includes(
         (cell(row, "HEDİYE") ?? "").toLocaleUpperCase("tr-TR"),
       ),
+      itso_status: null,
       row_color: readRowColor(sheet, rowNumber),
       contact_names: contactNames,
       validation_errors: errors,

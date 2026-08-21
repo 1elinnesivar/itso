@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ITSO_STATUS_OPTIONS } from "@/lib/itso-status";
 import { createClient } from "@/lib/supabase/client";
 import {
   recordSchema,
@@ -40,6 +41,7 @@ const emptyValues: RecordFormValues = {
   registered_address: "",
   phone_numbers: "",
   gift: false,
+  itso_status: "",
 };
 
 function valuesFromRecord(record: FurnitureRecord): RecordFormValues {
@@ -58,6 +60,7 @@ function valuesFromRecord(record: FurnitureRecord): RecordFormValues {
     registered_address: record.registered_address,
     phone_numbers: record.phone_numbers,
     gift: record.gift ?? false,
+    itso_status: record.itso_status ?? "",
   };
 }
 
@@ -412,6 +415,20 @@ export function RecordFormDialog({
                 {...form.register("gift")}
               />
               Hediye
+            </label>
+            <label className="space-y-1.5 text-sm font-medium sm:col-span-2">
+              İTSO Durumu
+              <select
+                className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                {...form.register("itso_status")}
+              >
+                <option value="">Seçiniz</option>
+                {ITSO_STATUS_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </label>
             <div className="space-y-2 sm:col-span-2">
               <div className="flex flex-wrap items-center justify-between gap-2">

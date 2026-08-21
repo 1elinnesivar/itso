@@ -20,6 +20,7 @@ export const recordSchema = z.object({
   registered_address: z.string().trim(),
   phone_numbers: z.string().transform((value) => value.replace(/\r\n?/g, "\n").trim()),
   gift: z.boolean(),
+  itso_status: optionalText,
 });
 
 export type RecordFormValues = z.input<typeof recordSchema>;
