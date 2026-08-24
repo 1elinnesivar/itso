@@ -11,6 +11,8 @@ describe("Oy durumu seçenekleri", () => {
       "OY GARANTİ",
       "RAKİP",
       "YETKİ BELGESİ ALINDI",
+      "Ziyaret Edilecek",
+      "Ziyaret Edildi",
     ]);
   });
 

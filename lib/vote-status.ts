@@ -6,6 +6,8 @@ export const VOTE_STATUS_OPTIONS = [
   "OY GARANTİ",
   "RAKİP",
   AUTHORIZATION_DOCUMENT_RECEIVED,
+  "Ziyaret Edilecek",
+  "Ziyaret Edildi",
 ] as const;
 
 export function countRecordsByVoteStatus(
