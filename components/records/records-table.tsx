@@ -694,76 +694,76 @@ export function RecordsTable({
   return (
     <>
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-1.5 md:grid-cols-12 md:gap-2">
+        <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4 md:gap-2 lg:grid-cols-6 xl:grid-cols-12">
           <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600" />
-            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+            <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
               Kırmızı
             </span>
-            <span className="text-sm font-bold tabular-nums text-red-700">
+            <span className="shrink-0 text-sm font-bold tabular-nums text-red-700">
               {colorCounts.red}
             </span>
           </div>
           <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-yellow-400" />
-            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+            <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
               Sarı
             </span>
-            <span className="text-sm font-bold tabular-nums text-yellow-700">
+            <span className="shrink-0 text-sm font-bold tabular-nums text-yellow-700">
               {colorCounts.yellow}
             </span>
           </div>
           <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-green-600" />
-            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+            <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
               Yeşil
             </span>
-            <span className="text-sm font-bold tabular-nums text-green-700">
+            <span className="shrink-0 text-sm font-bold tabular-nums text-green-700">
               {colorCounts.green}
             </span>
           </div>
           <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-blue-600" />
-            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+            <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
               Mavi
             </span>
-            <span className="text-sm font-bold tabular-nums text-blue-700">
+            <span className="shrink-0 text-sm font-bold tabular-nums text-blue-700">
               {colorCounts.blue}
             </span>
           </div>
           <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full border bg-muted" />
-            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+            <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
               Renksiz
             </span>
-            <span className="text-sm font-bold tabular-nums">
+            <span className="shrink-0 text-sm font-bold tabular-nums">
               {colorCounts.none}
             </span>
           </div>
-          <div className="col-span-2 flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm md:col-span-3">
+          <div className="col-span-2 flex h-9 items-center gap-2 overflow-hidden rounded-md border bg-background px-2.5 shadow-sm md:col-span-3 lg:col-span-2 xl:col-span-3">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-slate-600" />
-            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+            <span className="min-w-0 flex-1 text-xs font-medium leading-tight text-muted-foreground">
               Yetki Belgesi Alındı
             </span>
-            <span className="text-sm font-bold tabular-nums text-slate-700">
+            <span className="shrink-0 text-sm font-bold tabular-nums text-slate-700">
               {authorizationDocumentCount}
             </span>
           </div>
-          <div className="col-span-1 flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm md:col-span-2">
+          <div className="col-span-1 flex h-9 items-center gap-2 overflow-hidden rounded-md border bg-background px-2.5 shadow-sm md:col-span-2">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-600" />
-            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+            <span className="min-w-0 flex-1 text-xs font-medium leading-tight text-muted-foreground">
               İTSO'da
             </span>
-            <span className="text-sm font-bold tabular-nums text-cyan-700">
+            <span className="shrink-0 text-sm font-bold tabular-nums text-cyan-700">
               {atItsoCount}
             </span>
           </div>
-          <div className="col-span-1 flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm md:col-span-2">
+          <div className="col-span-1 flex h-9 items-center gap-2 overflow-hidden rounded-md border bg-background px-2.5 shadow-sm md:col-span-2">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-violet-600" />
-            <span className="min-w-0 flex-1 text-xs font-medium text-muted-foreground">
+            <span className="min-w-0 flex-1 text-xs font-medium leading-tight text-muted-foreground">
               İTSO Onaylandı
             </span>
-            <span className="text-sm font-bold tabular-nums text-violet-700">
+            <span className="shrink-0 text-sm font-bold tabular-nums text-violet-700">
               {itsoApprovedCount}
             </span>
           </div>
