@@ -45,7 +45,7 @@ export function AppShell({
   ];
 
   async function logout() {
-    await createClient().auth.signOut();
+    await createClient().auth.signOut({ scope: "local" });
     router.replace("/login");
     router.refresh();
   }
