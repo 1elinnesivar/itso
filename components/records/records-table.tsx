@@ -464,11 +464,27 @@ export function RecordsTable({
     data: records,
     columns,
     state: { globalFilter, columnFilters, sorting, columnVisibility: visibility, pagination },
-    onGlobalFilterChange: setGlobalFilter,
-    onColumnFiltersChange: setColumnFilters,
-    onSortingChange: setSorting,
+    onGlobalFilterChange: (updater) => {
+      setGlobalFilter(updater);
+      setPagination((current) =>
+        current.pageIndex === 0 ? current : { ...current, pageIndex: 0 },
+      );
+    },
+    onColumnFiltersChange: (updater) => {
+      setColumnFilters(updater);
+      setPagination((current) =>
+        current.pageIndex === 0 ? current : { ...current, pageIndex: 0 },
+      );
+    },
+    onSortingChange: (updater) => {
+      setSorting(updater);
+      setPagination((current) =>
+        current.pageIndex === 0 ? current : { ...current, pageIndex: 0 },
+      );
+    },
     onColumnVisibilityChange: setVisibility,
     onPaginationChange: setPagination,
+    autoResetPageIndex: false,
     globalFilterFn: (row, _columnId, value) => {
       const search = normalizeText(value);
       if (!search) return true;
