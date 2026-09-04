@@ -42,8 +42,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  COMPANY_TITLE,
   companyTitleCategory,
+  JOINT_STOCK_COMPANY_TITLE,
+  LIMITED_COMPANY_TITLE,
   SOLE_PROPRIETORSHIP_TITLE,
 } from "@/lib/company-title";
 import { exportRecords } from "@/lib/excel/records";
@@ -631,8 +632,12 @@ export function RecordsTable({
               label: "Şahıs",
             },
             {
-              value: COMPANY_TITLE,
-              label: "Şirketler",
+              value: JOINT_STOCK_COMPANY_TITLE,
+              label: "Anonim",
+            },
+            {
+              value: LIMITED_COMPANY_TITLE,
+              label: "Limited",
             },
           ]}
           value={filterValue("title_type_filter")}

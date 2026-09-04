@@ -1,7 +1,8 @@
 import { normalizeText } from "@/lib/utils";
 
 export const SOLE_PROPRIETORSHIP_TITLE = "sole_proprietorship";
-export const COMPANY_TITLE = "company";
+export const JOINT_STOCK_COMPANY_TITLE = "joint_stock_company";
+export const LIMITED_COMPANY_TITLE = "limited_company";
 
 function normalizeCompanyText(value: string): string {
   return normalizeText(value)
@@ -44,8 +45,14 @@ export function companyTitleCategory(
   title: string,
   officials?: string | null,
 ): string {
+  if (isJointStockCompanyTitle(title)) {
+    return JOINT_STOCK_COMPANY_TITLE;
+  }
+  if (isLimitedCompanyTitle(title)) {
+    return LIMITED_COMPANY_TITLE;
+  }
   if (isProbableSoleProprietorship(title, officials)) {
     return SOLE_PROPRIETORSHIP_TITLE;
   }
-  return COMPANY_TITLE;
+  return SOLE_PROPRIETORSHIP_TITLE;
 }
