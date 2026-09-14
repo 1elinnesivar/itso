@@ -676,7 +676,10 @@ export function RecordsTable({
       />
       <MultiSelectFilter
         label="İTSO"
-        options={optionsFor("itso_status")}
+        options={[
+          ...ITSO_STATUS_OPTIONS,
+          { value: "", label: "Boş" },
+        ]}
         value={filterValue("itso_status")}
         onChange={(value) => table.getColumn("itso_status")?.setFilterValue(value)}
       />
