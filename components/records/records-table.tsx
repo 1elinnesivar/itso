@@ -53,6 +53,7 @@ import {
   countItsoApproved,
   countRecordsByItsoStatus,
   ITSO_STATUS_OPTIONS,
+  RIVAL_APPROVED_STATUS,
 } from "@/lib/itso-status";
 import {
   contactsForRecord,
@@ -279,6 +280,10 @@ export function RecordsTable({
   );
   const atItsoCount = useMemo(
     () => countRecordsByItsoStatus(records, AT_ITSO_STATUS),
+    [records],
+  );
+  const rivalApprovedCount = useMemo(
+    () => countRecordsByItsoStatus(records, RIVAL_APPROVED_STATUS),
     [records],
   );
 
@@ -718,7 +723,7 @@ export function RecordsTable({
   return (
     <>
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4 md:gap-2 lg:grid-cols-6 xl:grid-cols-12">
+        <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4 md:gap-2 lg:grid-cols-6 xl:grid-cols-[repeat(14,minmax(0,1fr))]">
           <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600" />
             <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
@@ -789,6 +794,15 @@ export function RecordsTable({
             </span>
             <span className="shrink-0 text-sm font-bold tabular-nums text-violet-700">
               {itsoApprovedCount}
+            </span>
+          </div>
+          <div className="col-span-2 flex h-9 items-center gap-2 overflow-hidden rounded-md border bg-background px-2.5 shadow-sm md:col-span-2">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-rose-600" />
+            <span className="min-w-0 flex-1 text-xs font-medium leading-tight text-muted-foreground">
+              Rakip Onaylattı
+            </span>
+            <span className="shrink-0 text-sm font-bold tabular-nums text-rose-700">
+              {rivalApprovedCount}
             </span>
           </div>
         </div>
