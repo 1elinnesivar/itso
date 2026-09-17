@@ -22,6 +22,7 @@ export async function fetchLegacySnapshots(): Promise<LegacyTableSnapshot[]> {
   const { data, error } = await createClient()
     .from("legacy_table_snapshots")
     .select("id, label, source_file_name, record_count, created_by, created_at")
+    .gt("record_count", 0)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as LegacyTableSnapshot[];

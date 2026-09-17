@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export function CurrentRosterPanel() {
   const queryClient = useQueryClient();
+  const [archiving, setArchiving] = useState(false);
   const [fileName, setFileName] = useState("");
   const [rows, setRows] = useState<CurrentRosterRow[]>([]);
   const [activeCount, setActiveCount] = useState(0);
@@ -32,6 +33,36 @@ export function CurrentRosterPanel() {
   );
   const removedCount = Math.max(activeCount - selectedMembers.size, 0);
   const canApply = rows.length > 0 && invalidCount === 0 && missingCount === 0;
+
+  async function archiveCurrentTable() {
+    const confirmed = window.confirm(
+      "Mevcut ana tablonun tam kopyası Eski Tablo'ya alınacak ve ana tablo boşaltılacak. " +
+        "Kayıtlar fiziksel olarak silinmeyecek. Devam edilsin mi?",
+    );
+    if (!confirmed) return;
+
+    setArchiving(true);
+    const { data, error } = await createClient().rpc("archive_current_table");
+    setArchiving(false);
+    if (error) {
+      toast.error(`Ana tablo eskiye taşınamadı: ${error.message}`, {
+        duration: 15_000,
+      });
+      return;
+    }
+
+    const result = data as { snapshot_count?: number } | null;
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["records"] }),
+      queryClient.invalidateQueries({ queryKey: ["legacy-table"] }),
+      queryClient.invalidateQueries({ queryKey: ["archive"] }),
+    ]);
+    setActiveCount(0);
+    toast.success(
+      `${result?.snapshot_count ?? 0} kayıt Eski Tablo'ya alındı; ana tablo boşaltıldı.`,
+      { duration: 10_000 },
+    );
+  }
 
   async function selectFile(file: File | undefined) {
     if (!file) return;
@@ -63,11 +94,13 @@ export function CurrentRosterPanel() {
 
   async function applyRoster() {
     if (!canApply) return;
-    const confirmed = window.confirm(
-      `Bu işlem önce ${activeCount} aktif kaydın tam yedeğini Eski Tablo'ya alacak, ` +
+    const confirmationText = activeCount > 0
+      ? `Bu işlem önce ${activeCount} aktif kaydın tam yedeğini Eski Tablo'ya alacak, ` +
         `sonra ana tabloyu ${rows.length} firmalık güncel listeye çevirecek. ` +
-        `${removedCount} firma yalnız Eski Tablo'da kalacak. Devam edilsin mi?`,
-    );
+        `${removedCount} firma yalnız Eski Tablo'da kalacak. Devam edilsin mi?`
+      : `Boş ana tabloya ${rows.length} güncel firma getirilecek. ` +
+        "Eski Tablo'daki yedek değiştirilmeyecek. Devam edilsin mi?";
+    const confirmed = window.confirm(confirmationText);
     if (!confirmed) return;
 
     setApplying(true);
@@ -91,8 +124,10 @@ export function CurrentRosterPanel() {
     ]);
     const result = data as { current_count?: number; snapshot_count?: number } | null;
     toast.success(
-      `${result?.snapshot_count ?? activeCount} kayıt Eski Tablo'ya alındı; ` +
-        `${result?.current_count ?? rows.length} güncel firma ana tabloya uygulandı.`,
+      activeCount > 0
+        ? `${result?.snapshot_count ?? activeCount} kayıt Eski Tablo'ya alındı; ` +
+          `${result?.current_count ?? rows.length} güncel firma ana tabloya uygulandı.`
+        : `${result?.current_count ?? rows.length} güncel firma ana tabloya uygulandı; Eski Tablo korundu.`,
       { duration: 10_000 },
     );
     setRows([]);
@@ -100,7 +135,7 @@ export function CurrentRosterPanel() {
   }
 
   return (
-    <section className="space-y-4 rounded-lg border border-amber-300 bg-amber-50/40 p-5">
+    <section className="space-y-5 rounded-lg border border-amber-300 bg-amber-50/40 p-5">
       <div className="flex items-start gap-3">
         <DatabaseBackup className="mt-0.5 h-6 w-6 shrink-0 text-amber-700" />
         <div>
@@ -111,6 +146,23 @@ export function CurrentRosterPanel() {
           </p>
         </div>
       </div>
+      <div className="space-y-2 rounded-lg border bg-background p-4">
+        <h3 className="font-medium">1. Mevcut tabloyu eskiye taşı</h3>
+        <p className="text-sm text-muted-foreground">
+          Tüm mevcut alanları ve temasları Eski Tablo’ya kopyalar; ana listeyi
+          fiziksel veri silmeden boş hale getirir.
+        </p>
+        <Button
+          variant="outline"
+          disabled={archiving || applying || loading}
+          onClick={() => void archiveCurrentTable()}
+        >
+          {archiving ? <Loader2 className="h-4 w-4 animate-spin" /> : <DatabaseBackup className="h-4 w-4" />}
+          Eski tabloya taşı ve ana tabloyu boşalt
+        </Button>
+      </div>
+      <div className="space-y-3 rounded-lg border bg-background p-4">
+        <h3 className="font-medium">2. Güncel firma listesini yükle</h3>
       <Input
         type="file"
         accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -147,6 +199,7 @@ export function CurrentRosterPanel() {
           </Button>
         </div>
       )}
+      </div>
     </section>
   );
 }
