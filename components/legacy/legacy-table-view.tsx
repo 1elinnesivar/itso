@@ -9,6 +9,7 @@ import {
   fetchLegacyRecords,
   fetchLegacySnapshots,
 } from "@/lib/legacy-table";
+import { fetchContacts } from "@/lib/records";
 
 export function LegacyTableView() {
   const snapshots = useQuery({
@@ -28,10 +29,21 @@ export function LegacyTableView() {
     queryFn: () => fetchLegacyRecords(snapshotId),
     enabled: Boolean(snapshotId),
   });
-  const contacts = useMemo(
-    () => contactsFromLegacyRecords(records.data ?? []),
-    [records.data],
-  );
+  const contacts = useQuery({
+    queryKey: ["contacts"],
+    queryFn: fetchContacts,
+  });
+  const availableContacts = useMemo(() => {
+    const merged = new Map(
+      (contacts.data ?? []).map((contact) => [contact.id, contact]),
+    );
+    contactsFromLegacyRecords(records.data ?? []).forEach((contact) => {
+      merged.set(contact.id, contact);
+    });
+    return [...merged.values()].sort((left, right) =>
+      left.display_name.localeCompare(right.display_name, "tr"),
+    );
+  }, [contacts.data, records.data]);
 
   if (snapshots.isLoading) {
     return <p className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Eski tablo yükleniyor…</p>;
@@ -76,11 +88,12 @@ export function LegacyTableView() {
       ) : (
         <RecordsTable
           records={records.data ?? []}
-          contacts={contacts}
-          role="viewer"
+          contacts={availableContacts}
+          role="admin"
           canExport
           loading={records.isFetching}
           onRefresh={() => void records.refetch()}
+          legacySnapshotId={snapshotId}
         />
       )}
     </div>

@@ -206,6 +206,7 @@ export function RecordsTable({
   canExport,
   loading,
   onRefresh,
+  legacySnapshotId,
 }: {
   records: FurnitureRecord[];
   contacts: ContactPerson[];
@@ -213,6 +214,7 @@ export function RecordsTable({
   canExport: boolean;
   loading: boolean;
   onRefresh: () => void;
+  legacySnapshotId?: string;
 }) {
   const editable = role === "admin" || role === "editor";
   const isAnonymous = !canExport;
@@ -473,7 +475,7 @@ export function RecordsTable({
         ),
       },
     ],
-    [editable, deletingId, coloringId, giftingId, updatingItsoId, contactColumnCount],
+    [editable, deletingId, coloringId, giftingId, updatingItsoId, contactColumnCount, legacySnapshotId],
   );
 
   const table = useReactTable({
@@ -545,10 +547,16 @@ export function RecordsTable({
   async function remove(record: FurnitureRecord) {
     if (!window.confirm(`${record.member_registry_no} sicil numaralı kayıt arşive taşınsın mı?`)) return;
     setDeletingId(record.id);
-    const { error } = await createClient().rpc("soft_delete_record", {
-      p_id: record.id,
-      p_expected_version: record.version,
-    });
+    const { error } = legacySnapshotId
+      ? await createClient().rpc("soft_delete_legacy_record", {
+          p_snapshot_id: legacySnapshotId,
+          p_id: record.id,
+          p_expected_version: record.version,
+        })
+      : await createClient().rpc("soft_delete_record", {
+          p_id: record.id,
+          p_expected_version: record.version,
+        });
     setDeletingId(null);
     if (error) {
       toast.error(
@@ -569,11 +577,19 @@ export function RecordsTable({
   ) {
     if (record.row_color === color) return;
     setColoringId(record.id);
-    const { error } = await createClient().rpc("set_record_color", {
-      p_id: record.id,
-      p_expected_version: record.version,
-      p_row_color: color,
-    });
+    const { error } = legacySnapshotId
+      ? await createClient().rpc("patch_legacy_record", {
+          p_snapshot_id: legacySnapshotId,
+          p_id: record.id,
+          p_expected_version: record.version,
+          p_field: "row_color",
+          p_value: color,
+        })
+      : await createClient().rpc("set_record_color", {
+          p_id: record.id,
+          p_expected_version: record.version,
+          p_row_color: color,
+        });
     setColoringId(null);
     if (error) {
       toast.error(
@@ -591,11 +607,19 @@ export function RecordsTable({
   async function changeGift(record: FurnitureRecord, gift: boolean) {
     if (record.gift === gift) return;
     setGiftingId(record.id);
-    const { error } = await createClient().rpc("set_record_gift", {
-      p_id: record.id,
-      p_expected_version: record.version,
-      p_gift: gift,
-    });
+    const { error } = legacySnapshotId
+      ? await createClient().rpc("patch_legacy_record", {
+          p_snapshot_id: legacySnapshotId,
+          p_id: record.id,
+          p_expected_version: record.version,
+          p_field: "gift",
+          p_value: gift,
+        })
+      : await createClient().rpc("set_record_gift", {
+          p_id: record.id,
+          p_expected_version: record.version,
+          p_gift: gift,
+        });
     setGiftingId(null);
     if (error) {
       toast.error(
@@ -616,11 +640,19 @@ export function RecordsTable({
   ) {
     if (record.itso_status === itsoStatus) return;
     setUpdatingItsoId(record.id);
-    const { error } = await createClient().rpc("set_record_itso_status", {
-      p_id: record.id,
-      p_expected_version: record.version,
-      p_itso_status: itsoStatus,
-    });
+    const { error } = legacySnapshotId
+      ? await createClient().rpc("patch_legacy_record", {
+          p_snapshot_id: legacySnapshotId,
+          p_id: record.id,
+          p_expected_version: record.version,
+          p_field: "itso_status",
+          p_value: itsoStatus,
+        })
+      : await createClient().rpc("set_record_itso_status", {
+          p_id: record.id,
+          p_expected_version: record.version,
+          p_itso_status: itsoStatus,
+        });
     setUpdatingItsoId(null);
     if (error) {
       toast.error(
@@ -1203,6 +1235,7 @@ export function RecordsTable({
         record={selected}
         contacts={contacts}
         role={role}
+        legacySnapshotId={legacySnapshotId}
       />
     </>
   );

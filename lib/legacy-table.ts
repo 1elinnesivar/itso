@@ -16,6 +16,7 @@ interface StoredContact {
 interface LegacyRecordRow {
   record_data: FurnitureRecord;
   contacts: StoredContact[] | null;
+  version: number;
 }
 
 export async function fetchLegacySnapshots(): Promise<LegacyTableSnapshot[]> {
@@ -33,8 +34,9 @@ export async function fetchLegacyRecords(
 ): Promise<FurnitureRecord[]> {
   const { data, error } = await createClient()
     .from("legacy_table_records")
-    .select("record_data, contacts")
-    .eq("snapshot_id", snapshotId);
+    .select("record_data, contacts, version")
+    .eq("snapshot_id", snapshotId)
+    .is("deleted_at", null);
   if (error) throw error;
 
   return ((data ?? []) as unknown as LegacyRecordRow[])
@@ -50,6 +52,7 @@ export async function fetchLegacyRecords(
       }));
       return {
         ...row.record_data,
+        version: row.version,
         registration_date: row.record_data.registration_date ?? null,
         tax_office_account: row.record_data.tax_office_account ?? null,
         authority_signature: row.record_data.authority_signature ?? null,

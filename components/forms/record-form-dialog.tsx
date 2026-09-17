@@ -223,12 +223,14 @@ export function RecordFormDialog({
   record,
   contacts,
   role,
+  legacySnapshotId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   record: FurnitureRecord | null;
   contacts: ContactPerson[];
   role: AppRole;
+  legacySnapshotId?: string;
 }) {
   const editable = role === "admin" || role === "editor";
   const queryClient = useQueryClient();
@@ -296,11 +298,18 @@ export function RecordFormDialog({
   async function renameContact() {
     if (!editingContact || !editingContactName.trim()) return;
     setRenamingContact(true);
-    const { error } = await createClient().rpc("rename_contact_person", {
-      p_id: editingContact.id,
-      p_expected_name: editingContact.display_name,
-      p_display_name: editingContactName,
-    });
+    const { error } = legacySnapshotId
+      ? await createClient().rpc("rename_legacy_contact", {
+          p_snapshot_id: legacySnapshotId,
+          p_id: editingContact.id,
+          p_expected_name: editingContact.display_name,
+          p_display_name: editingContactName,
+        })
+      : await createClient().rpc("rename_contact_person", {
+          p_id: editingContact.id,
+          p_expected_name: editingContact.display_name,
+          p_display_name: editingContactName,
+        });
     setRenamingContact(false);
     if (error) {
       toast.error(
@@ -315,6 +324,7 @@ export function RecordFormDialog({
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["contacts"] }),
       queryClient.invalidateQueries({ queryKey: ["records"] }),
+      queryClient.invalidateQueries({ queryKey: ["legacy-table"] }),
     ]);
     toast.success("Temas sorumlusunun adı güncellendi.");
     setEditingContact(null);
@@ -328,22 +338,38 @@ export function RecordFormDialog({
     }
     const payload = values;
     const supabase = createClient();
-    const response = record
-      ? await supabase.rpc("update_record", {
-          p_id: record.id,
-          p_expected_version: initialVersion,
-          p_payload: payload,
-          p_contact_ids: contactIds,
-        })
-      : await supabase.rpc("create_record", {
-          p_payload: payload,
-          p_contact_ids: contactIds,
-        });
+    const response = legacySnapshotId
+      ? record
+        ? await supabase.rpc("update_legacy_record", {
+            p_snapshot_id: legacySnapshotId,
+            p_id: record.id,
+            p_expected_version: initialVersion,
+            p_payload: payload,
+            p_contact_ids: contactIds,
+          })
+        : await supabase.rpc("create_legacy_record", {
+            p_snapshot_id: legacySnapshotId,
+            p_payload: payload,
+            p_contact_ids: contactIds,
+          })
+      : record
+        ? await supabase.rpc("update_record", {
+            p_id: record.id,
+            p_expected_version: initialVersion,
+            p_payload: payload,
+            p_contact_ids: contactIds,
+          })
+        : await supabase.rpc("create_record", {
+            p_payload: payload,
+            p_contact_ids: contactIds,
+          });
 
     if (response.error) {
       if (response.error.code === "40001" || response.error.message.includes("VERSION_CONFLICT")) {
         setConflict(true);
-        await queryClient.invalidateQueries({ queryKey: ["records"] });
+        await queryClient.invalidateQueries({
+          queryKey: legacySnapshotId ? ["legacy-table"] : ["records"],
+        });
         toast.error("Kayıt başka bir kullanıcı tarafından değiştirildi.");
       } else {
         toast.error(response.error.message.includes("duplicate")
@@ -352,7 +378,9 @@ export function RecordFormDialog({
       }
       return;
     }
-    await queryClient.invalidateQueries({ queryKey: ["records"] });
+    await queryClient.invalidateQueries({
+      queryKey: legacySnapshotId ? ["legacy-table"] : ["records"],
+    });
     toast.success(record ? "Kayıt güncellendi." : "Kayıt eklendi.");
     onOpenChange(false);
   }
