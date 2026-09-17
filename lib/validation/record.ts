@@ -8,6 +8,9 @@ const optionalText = z
 export const recordSchema = z.object({
   member_registry_no: z.string().trim().min(1, "Üye Sicil No zorunlu."),
   trade_registry_no: optionalText,
+  registration_date: optionalText,
+  tax_office_account: optionalText,
+  authority_signature: optionalText,
   profession_group: z.string().trim().min(1, "Meslek Grubu zorunlu."),
   status: z.string().trim().min(1, "Durum zorunlu."),
   title: z.string().trim().min(1, "Unvan zorunlu."),

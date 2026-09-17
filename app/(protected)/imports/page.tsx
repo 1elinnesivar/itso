@@ -1,4 +1,5 @@
 import { ImportPanel } from "@/components/excel/import-panel";
+import { CurrentRosterPanel } from "@/components/excel/current-roster-panel";
 import { requireAdmin } from "@/lib/supabase/auth";
 
 export default async function ImportsPage() {
@@ -11,8 +12,10 @@ export default async function ImportsPage() {
           Dosya tarayıcıda okunur; önizleme onaylanmadan veritabanı değişmez.
         </p>
       </div>
-      <ImportPanel />
+      <div className="space-y-8">
+        <CurrentRosterPanel />
+        <ImportPanel />
+      </div>
     </section>
   );
 }
-

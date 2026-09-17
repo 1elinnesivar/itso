@@ -22,6 +22,9 @@ export interface FurnitureRecord {
   display_order: number;
   member_registry_no: string;
   trade_registry_no: string | null;
+  registration_date: string | null;
+  tax_office_account: string | null;
+  authority_signature: string | null;
   profession_group: string;
   status: string;
   title: string;
@@ -76,5 +79,14 @@ export interface AuditLog {
   actor_id: string | null;
   version_from: number | null;
   version_to: number | null;
+  created_at: string;
+}
+
+export interface LegacyTableSnapshot {
+  id: string;
+  label: string;
+  source_file_name: string;
+  record_count: number;
+  created_by: string | null;
   created_at: string;
 }

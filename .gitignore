@@ -14,9 +14,10 @@ test-results/
 .supabase/
 supabase/.temp/
 
-# Confidential workbooks and Excel lock files
+# Confidential source documents, exports, and Excel lock files
 *.xlsx
 *.xls
+*.pdf
 ~$*
 
 # Editors and operating systems

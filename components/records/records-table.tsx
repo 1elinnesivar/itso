@@ -220,6 +220,9 @@ export function RecordsTable({
     ? {
         member_registry_no: false,
         trade_registry_no: false,
+        registration_date: false,
+        tax_office_account: false,
+        authority_signature: false,
         officials: false,
         origin: false,
         vote_status: false,
@@ -321,6 +324,13 @@ export function RecordsTable({
       makeColumn("display_order", "Sıra", 70),
       makeColumn("member_registry_no", "Üye Sicil No", 115),
       makeColumn("trade_registry_no", "Ticaret Sicil No", 125),
+      makeColumn("registration_date", "Kayıt Tarihi", 120),
+      makeColumn("tax_office_account", "Vergi Dairesi / Hesap No", 230, ({ getValue }) => (
+        <span className="whitespace-pre-line">{String(getValue() ?? "")}</span>
+      )),
+      makeColumn("authority_signature", "Yetki / İmza", 170, ({ getValue }) => (
+        <span className="whitespace-pre-line">{String(getValue() ?? "")}</span>
+      )),
       makeColumn("profession_group", "Meslek Grubu", 210),
       {
         ...makeColumn("status", "Durumu", 100, ({ getValue }) => (
@@ -500,6 +510,9 @@ export function RecordsTable({
           record.display_order,
           record.member_registry_no,
           record.trade_registry_no,
+          record.registration_date,
+          record.tax_office_account,
+          record.authority_signature,
           record.profession_group,
           record.status,
           record.title,

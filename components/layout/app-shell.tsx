@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Archive,
+  Copy,
   ContactRound,
   FileSpreadsheet,
   History,
@@ -41,6 +42,7 @@ export function AppShell({
     },
     { href: "/imports", label: "İçe Aktar", icon: FileSpreadsheet, show: profile.role === "admin" },
     { href: "/archive", label: "Arşiv", icon: Archive, show: profile.role === "admin" },
+    { href: "/legacy", label: "Eski Tablo", icon: Copy, show: profile.role === "admin" },
     { href: "/audit", label: "Denetim", icon: History, show: profile.role === "admin" },
   ];
 

@@ -29,6 +29,9 @@ import type { AppRole, ContactPerson, FurnitureRecord } from "@/types/app";
 const emptyValues: RecordFormValues = {
   member_registry_no: "",
   trade_registry_no: "",
+  registration_date: "",
+  tax_office_account: "",
+  authority_signature: "",
   profession_group: "MOBİLYA TOP. VE PERAKENDE",
   status: "Faal",
   title: "",
@@ -48,6 +51,9 @@ function valuesFromRecord(record: FurnitureRecord): RecordFormValues {
   return {
     member_registry_no: record.member_registry_no,
     trade_registry_no: record.trade_registry_no ?? "",
+    registration_date: record.registration_date ?? "",
+    tax_office_account: record.tax_office_account ?? "",
+    authority_signature: record.authority_signature ?? "",
     profession_group: record.profession_group,
     status: record.status,
     title: record.title,
@@ -72,6 +78,9 @@ const textFields: Array<{
 }> = [
   { name: "member_registry_no", label: "Üye Sicil No", required: true },
   { name: "trade_registry_no", label: "Ticaret Sicil No" },
+  { name: "registration_date", label: "Kayıt Tarihi" },
+  { name: "tax_office_account", label: "Vergi Dairesi / Vergi Hesap No", full: true },
+  { name: "authority_signature", label: "Yetki / İmza", full: true },
   { name: "profession_group", label: "Meslek Grubu", required: true, full: true },
   { name: "status", label: "Durumu", required: true },
   { name: "vote_status", label: "Oy Durumu" },
