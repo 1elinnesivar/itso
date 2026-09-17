@@ -17,9 +17,9 @@ begin
   );
 
   if new_definition = old_definition then
-    raise exception 'apply_current_roster constraint statement was not found';
+    raise notice 'apply_current_roster already uses portable constraint resolution';
+  else
+    execute new_definition;
   end if;
-
-  execute new_definition;
 end;
 $$;
