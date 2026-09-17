@@ -284,7 +284,9 @@ begin
   from public.records record
   where record.deleted_at is null;
 
-  set constraints records_display_order_unique, records_trade_registry_unique deferred;
+  -- Kurulumlar arasında constraint adları değişebilir. ALL yalnızca
+  -- deferrable constraint'leri erteler ve belirli bir ada bağımlı değildir.
+  set constraints all deferred;
 
   with absent as (
     select
