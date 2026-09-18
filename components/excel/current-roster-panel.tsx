@@ -11,6 +11,7 @@ import {
   type CurrentRosterRow,
 } from "@/lib/excel/current-roster";
 import { fetchAllRecords } from "@/lib/records";
+import { fetchLegacyRecords, fetchLegacySnapshots } from "@/lib/legacy-table";
 import { createClient } from "@/lib/supabase/client";
 
 export function CurrentRosterPanel() {
@@ -21,6 +22,9 @@ export function CurrentRosterPanel() {
   const [rows, setRows] = useState<CurrentRosterRow[]>([]);
   const [activeCount, setActiveCount] = useState(0);
   const [missingCount, setMissingCount] = useState(0);
+  const [legacySnapshotId, setLegacySnapshotId] = useState("");
+  const [legacyRecordCount, setLegacyRecordCount] = useState(0);
+  const [importFromLegacy, setImportFromLegacy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
 
@@ -32,7 +36,10 @@ export function CurrentRosterPanel() {
     () => new Set(rows.map((row) => row.member_registry_no)),
     [rows],
   );
-  const removedCount = Math.max(activeCount - selectedMembers.size, 0);
+  const removedCount = Math.max(
+    (importFromLegacy ? legacyRecordCount : activeCount) - selectedMembers.size,
+    0,
+  );
   const canApply = rows.length > 0 && invalidCount === 0 && missingCount === 0;
 
   async function archiveCurrentTable() {
@@ -106,11 +113,22 @@ export function CurrentRosterPanel() {
         fetchAllRecords(false),
         fetchAllRecords(true),
       ]);
-      const knownMembers = new Set(
-        [...active, ...archived].map((record) => record.member_registry_no),
-      );
+      let sourceRecords = [...active, ...archived];
+      let sourceSnapshotId = "";
+      const useLegacy = sourceRecords.length === 0;
+      if (useLegacy) {
+        const snapshots = await fetchLegacySnapshots();
+        sourceSnapshotId = snapshots[0]?.id ?? "";
+        sourceRecords = sourceSnapshotId
+          ? await fetchLegacyRecords(sourceSnapshotId)
+          : [];
+      }
+      const knownMembers = new Set(sourceRecords.map((record) => record.member_registry_no));
       setRows(parsed);
       setActiveCount(active.length);
+      setImportFromLegacy(useLegacy);
+      setLegacySnapshotId(sourceSnapshotId);
+      setLegacyRecordCount(sourceRecords.length);
       setMissingCount(
         parsed.filter((row) => !knownMembers.has(row.member_registry_no)).length,
       );
@@ -136,10 +154,16 @@ export function CurrentRosterPanel() {
 
     setApplying(true);
     const payload = rows.map(({ validation_errors: _errors, row_number: _row, ...row }) => row);
-    const { data, error } = await createClient().rpc("apply_current_roster", {
-      p_source_file_name: fileName,
-      p_rows: payload,
-    });
+    const { data, error } = importFromLegacy
+      ? await createClient().rpc("apply_current_roster_from_legacy", {
+          p_snapshot_id: legacySnapshotId,
+          p_source_file_name: fileName,
+          p_rows: payload,
+        })
+      : await createClient().rpc("apply_current_roster", {
+          p_source_file_name: fileName,
+          p_rows: payload,
+        });
     setApplying(false);
     if (error) {
       toast.error(`Güncel liste uygulanamadı: ${error.message}`, {
@@ -223,15 +247,19 @@ export function CurrentRosterPanel() {
       {rows.length > 0 && (
         <div className="space-y-3 text-sm">
           <div className="grid gap-2 sm:grid-cols-4">
-            <p className="rounded border bg-background p-3">Eski aktif: <strong>{activeCount}</strong></p>
+            <p className="rounded border bg-background p-3">
+              {importFromLegacy ? "Eski Tablo kaynağı" : "Eski aktif"}: <strong>{importFromLegacy ? legacyRecordCount : activeCount}</strong>
+            </p>
             <p className="rounded border bg-background p-3">Yeni ana tablo: <strong>{rows.length}</strong></p>
-            <p className="rounded border bg-background p-3">Eskiye ayrılacak: <strong>{removedCount}</strong></p>
+            <p className="rounded border bg-background p-3">
+              {importFromLegacy ? "PDF dışında kalan" : "Eskiye ayrılacak"}: <strong>{removedCount}</strong>
+            </p>
             <p className="rounded border bg-background p-3">Hatalı/eşleşmeyen: <strong>{invalidCount + missingCount}</strong></p>
           </div>
           {canApply ? (
             <div className="flex gap-2 rounded border border-emerald-300 bg-emerald-50 p-3 text-emerald-900">
               <CheckCircle2 className="h-5 w-5 shrink-0" />
-              Tüm firmalar Üye Sicil No ile eşleşti. Geçiş tek veritabanı işlemi olarak uygulanabilir.
+              Tüm firmalar Üye Sicil No ile {importFromLegacy ? "Eski Tablo'da" : "sistemde"} eşleşti. Geçiş tek veritabanı işlemi olarak uygulanabilir.
             </div>
           ) : (
             <div className="flex gap-2 rounded border border-red-300 bg-red-50 p-3 text-red-900">
@@ -241,7 +269,7 @@ export function CurrentRosterPanel() {
           )}
           <Button disabled={!canApply || applying} onClick={() => void applyRoster()}>
             {applying ? <Loader2 className="h-4 w-4 animate-spin" /> : <DatabaseBackup className="h-4 w-4" />}
-            Eski tabloyu yedekle ve güncel listeyi uygula
+            {importFromLegacy ? "Eski Tablo bilgileriyle ana listeyi oluştur" : "Eski tabloyu yedekle ve güncel listeyi uygula"}
           </Button>
         </div>
       )}
