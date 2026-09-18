@@ -83,14 +83,14 @@ export function CurrentRosterPanel() {
       return;
     }
 
-    const result = data as { cleared_count?: number } | null;
+    const result = data as { deleted_count?: number } | null;
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["records"] }),
       queryClient.invalidateQueries({ queryKey: ["archive"] }),
     ]);
     setActiveCount(0);
     toast.success(
-      `${result?.cleared_count ?? 0} kayıt ana tablodan kaldırıldı. Eski Tablo değiştirilmedi.`,
+      `${result?.deleted_count ?? 0} ana tablo kaydı tamamen silindi. Eski Tablo değiştirilmedi.`,
       { duration: 10_000 },
     );
   }
@@ -195,8 +195,8 @@ export function CurrentRosterPanel() {
       <div className="space-y-2 rounded-lg border border-red-300 bg-red-50/50 p-4">
         <h3 className="font-medium text-red-900">Ana tabloyu yedeklemeden temizle</h3>
         <p className="text-sm text-red-800">
-          Eski Tablo’ya yeni kopya oluşturmaz. Ana listeyi boşaltır; kayıtlar
-          sonraki sicil eşleştirmesi için dahili olarak korunur.
+          Eski Tablo’ya yeni kopya oluşturmaz. Ana kayıtları ve ana arşivi
+          fiziksel olarak siler; mevcut Eski Tablo kopyasına dokunmaz.
         </p>
         <Button
           variant="destructive"
