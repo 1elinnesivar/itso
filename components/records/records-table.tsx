@@ -92,6 +92,15 @@ const colorLabels = {
   "": "Renksiz",
 } as const;
 
+const uncertainVoteStatuses = ["", "Ziyaret Edilecek", "Ziyaret Edildi"];
+const uncertainItsoStatuses = [""];
+const uncertainRowColors = ["yellow", "green", ""];
+
+function hasSameValues(current: string[], expected: string[]) {
+  return current.length === expected.length &&
+    expected.every((value) => current.includes(value));
+}
+
 function rowColorClasses(color: FurnitureRecord["row_color"]) {
   if (color === "yellow") {
     return "border-l-4 border-l-yellow-500 bg-yellow-100 hover:bg-yellow-200";
@@ -668,6 +677,23 @@ export function RecordsTable({
   }
 
   const filterValue = (id: string) => (table.getColumn(id)?.getFilterValue() as string[]) ?? [];
+  const uncertainFilterActive =
+    hasSameValues(filterValue("vote_status"), uncertainVoteStatuses) &&
+    hasSameValues(filterValue("itso_status"), uncertainItsoStatuses) &&
+    hasSameValues(filterValue("row_color_filter"), uncertainRowColors);
+
+  function toggleUncertainFilter() {
+    const next = uncertainFilterActive ? undefined : uncertainVoteStatuses;
+    table.getColumn("vote_status")?.setFilterValue(next);
+    table.getColumn("itso_status")?.setFilterValue(
+      uncertainFilterActive ? undefined : uncertainItsoStatuses,
+    );
+    table.getColumn("row_color_filter")?.setFilterValue(
+      uncertainFilterActive ? undefined : uncertainRowColors,
+    );
+    setPagination((current) => ({ ...current, pageIndex: 0 }));
+  }
+
   const filteredRecords = table.getFilteredRowModel().rows.map((row) => row.original);
   const sortedFilteredRecords = table.getSortedRowModel().rows.map((row) => row.original);
 
@@ -862,6 +888,18 @@ export function RecordsTable({
               placeholder="Tüm kayıtlarda ara..."
             />
           </div>
+          {!isAnonymous && (
+            <Button
+              type="button"
+              size="sm"
+              variant={uncertainFilterActive ? "default" : "outline"}
+              onClick={toggleUncertainFilter}
+              title="Oy Durumu: Boş/Ziyaret; İTSO: Boş; Renk: Sarı/Yeşil/Renksiz"
+            >
+              <Filter className="h-4 w-4" />
+              BELİRSİZ
+            </Button>
+          )}
           <div className="hidden flex-wrap items-center gap-2 md:flex">
             {renderMultiFilters()}
           </div>
