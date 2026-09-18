@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/client";
 export function CurrentRosterPanel() {
   const queryClient = useQueryClient();
   const [archiving, setArchiving] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [fileName, setFileName] = useState("");
   const [rows, setRows] = useState<CurrentRosterRow[]>([]);
   const [activeCount, setActiveCount] = useState(0);
@@ -60,6 +61,36 @@ export function CurrentRosterPanel() {
     setActiveCount(0);
     toast.success(
       `${result?.snapshot_count ?? 0} kayıt Eski Tablo'ya alındı; ana tablo boşaltıldı.`,
+      { duration: 10_000 },
+    );
+  }
+
+  async function clearCurrentTable() {
+    const confirmation = window.prompt(
+      "Ana tablo Eski Tablo'ya yeni kopya oluşturulmadan boşaltılacak. Onaylamak için TEMİZLE yazın.",
+    );
+    if (confirmation !== "TEMİZLE") return;
+
+    setClearing(true);
+    const { data, error } = await createClient().rpc(
+      "clear_current_table_without_snapshot",
+    );
+    setClearing(false);
+    if (error) {
+      toast.error(`Ana tablo temizlenemedi: ${error.message}`, {
+        duration: 15_000,
+      });
+      return;
+    }
+
+    const result = data as { cleared_count?: number } | null;
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["records"] }),
+      queryClient.invalidateQueries({ queryKey: ["archive"] }),
+    ]);
+    setActiveCount(0);
+    toast.success(
+      `${result?.cleared_count ?? 0} kayıt ana tablodan kaldırıldı. Eski Tablo değiştirilmedi.`,
       { duration: 10_000 },
     );
   }
@@ -159,6 +190,21 @@ export function CurrentRosterPanel() {
         >
           {archiving ? <Loader2 className="h-4 w-4 animate-spin" /> : <DatabaseBackup className="h-4 w-4" />}
           Eski tabloya taşı ve ana tabloyu boşalt
+        </Button>
+      </div>
+      <div className="space-y-2 rounded-lg border border-red-300 bg-red-50/50 p-4">
+        <h3 className="font-medium text-red-900">Ana tabloyu yedeklemeden temizle</h3>
+        <p className="text-sm text-red-800">
+          Eski Tablo’ya yeni kopya oluşturmaz. Ana listeyi boşaltır; kayıtlar
+          sonraki sicil eşleştirmesi için dahili olarak korunur.
+        </p>
+        <Button
+          variant="destructive"
+          disabled={clearing || archiving || applying || loading}
+          onClick={() => void clearCurrentTable()}
+        >
+          {clearing ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
+          Ana tabloyu temizle
         </Button>
       </div>
       <div className="space-y-3 rounded-lg border bg-background p-4">
