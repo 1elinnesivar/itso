@@ -1,5 +1,5 @@
--- Ana kayıt ve arşiv tablosunu yeni bir Eski Tablo snapshot'i oluşturmadan
--- fiziksel olarak temizler. Bağımsız legacy_table_* kopyalarına dokunmaz.
+-- Daha önce kurulmuş temizleme fonksiyonunu Supabase safe-update
+-- denetimiyle uyumlu hale getirir.
 create or replace function public.clear_current_table_without_snapshot()
 returns jsonb
 language plpgsql
@@ -7,23 +7,22 @@ security definer
 set search_path = ''
 as $$
 declare
-  active_count integer;
+  record_count integer;
 begin
   perform public.require_role(array['admin']::public.app_role[]);
   lock table public.records in share row exclusive mode;
   perform pg_advisory_xact_lock(hashtext('public.records.current_roster'));
 
-  select count(*) into active_count from public.records;
-  if active_count = 0 then
+  select count(*) into record_count from public.records;
+  if record_count = 0 then
     raise exception 'CURRENT_TABLE_ALREADY_EMPTY' using errcode = 'P0001';
   end if;
 
-  -- Supabase safe-update denetimi açık bir WHERE koşulu gerektirir.
-  -- id bir primary key olduğu için bu koşul tablodaki bütün kayıtları kapsar.
+  -- id bir primary key olduğu için bu koşul bütün kayıtları kapsar.
   delete from public.records where id is not null;
 
   return jsonb_build_object(
-    'deleted_count', active_count,
+    'deleted_count', record_count,
     'current_count', 0
   );
 end;
