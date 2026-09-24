@@ -15,22 +15,19 @@ export function subscribeToRecordChanges(onChange: () => void) {
         : {};
     },
   });
-  const disposeSubscription = socket.subscribe(
-    {
-      query: `subscription LiveRecords {
-        records { id version updated_at }
-        contact_people { id display_name }
-        record_contacts { record_id contact_person_id position }
-      }`,
-    },
-    {
-      next: onChange,
-      error: () => undefined,
-      complete: () => undefined,
-    },
-  );
+  const listener = {
+    next: onChange,
+    error: () => undefined,
+    complete: () => undefined,
+  };
+  const subscriptions = [
+    `subscription LiveRecords { records { id version updated_at } }`,
+    `subscription LiveContacts { contact_people { id display_name } }`,
+    `subscription LiveRecordContacts { record_contacts { record_id contact_person_id position } }`,
+  ].map((query) => socket.subscribe({ query }, listener));
+
   return () => {
-    disposeSubscription();
+    for (const dispose of subscriptions) dispose();
     void socket.dispose();
   };
 }
