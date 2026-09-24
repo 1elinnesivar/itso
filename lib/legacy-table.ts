@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/nhost/client";
+import { createClient } from "@/lib/supabase/client";
 import type {
   ContactPerson,
   FurnitureRecord,

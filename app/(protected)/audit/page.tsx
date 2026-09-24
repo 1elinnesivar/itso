@@ -1,5 +1,5 @@
 import { AuditList } from "@/components/audit/audit-list";
-import { requireAdmin } from "@/lib/nhost/auth";
+import { requireAdmin } from "@/lib/supabase/auth";
 
 export default async function AuditPage() {
   await requireAdmin();

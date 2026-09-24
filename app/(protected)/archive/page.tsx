@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/nhost/auth";
+import { requireAdmin } from "@/lib/supabase/auth";
 import { ArchiveList } from "@/components/archive/archive-list";
 
 export default async function ArchivePage() {

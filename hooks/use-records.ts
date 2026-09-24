@@ -2,21 +2,35 @@
 
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createClient } from "@/lib/supabase/client";
 import { fetchAllRecords, fetchContacts, fetchProfile } from "@/lib/records";
-import { subscribeToRecordChanges } from "@/lib/nhost/realtime";
 
 export function useRecords() {
   const queryClient = useQueryClient();
-  const records = useQuery({ queryKey: ["records"], queryFn: () => fetchAllRecords(false), refetchInterval: 5_000 });
-  const contacts = useQuery({ queryKey: ["contacts"], queryFn: fetchContacts, refetchInterval: 5_000 });
+  const records = useQuery({ queryKey: ["records"], queryFn: () => fetchAllRecords(false) });
+  const contacts = useQuery({ queryKey: ["contacts"], queryFn: fetchContacts });
   const profile = useQuery({ queryKey: ["profile"], queryFn: fetchProfile });
 
   useEffect(() => {
+    const supabase = createClient();
     const refreshRecords = () => {
       void queryClient.invalidateQueries({ queryKey: ["records"] });
-      void queryClient.invalidateQueries({ queryKey: ["contacts"] });
     };
-    const unsubscribe = subscribeToRecordChanges(refreshRecords);
+    const channel = supabase
+      .channel("records-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "records" }, refreshRecords)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "record_contacts" },
+        refreshRecords,
+      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "contact_people" }, () => {
+        void queryClient.invalidateQueries({ queryKey: ["contacts"] });
+        refreshRecords();
+      })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") refreshRecords();
+      });
 
     const onVisibility = () => {
       if (document.visibilityState === "visible") refreshRecords();
@@ -24,7 +38,7 @@ export function useRecords() {
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
-      unsubscribe();
+      void supabase.removeChannel(channel);
     };
   }, [queryClient]);
 

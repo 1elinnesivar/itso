@@ -15,6 +15,7 @@ test-results/
 supabase/.temp/
 .npm-cache/
 .migration-backups/
+a.txt
 
 # Confidential source documents, exports, and Excel lock files
 *.xlsx
@@ -27,3 +28,5 @@ supabase/.temp/
 Thumbs.db
 .idea/
 .vscode/
+
+.vercel

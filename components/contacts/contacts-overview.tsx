@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { parseContactDisplayName } from "@/lib/contacts";
 import { fetchAllRecords, fetchContacts } from "@/lib/records";
-import { createClient } from "@/lib/nhost/client";
+import { createClient } from "@/lib/supabase/client";
 import { normalizeText } from "@/lib/utils";
 import type { ContactPerson } from "@/types/app";
 
@@ -66,7 +66,7 @@ export function ContactsOverview() {
         queryClient.setQueryData(["contacts"], context.previous);
       }
       toast.error(
-        "Gönderim durumu Nhost'a kaydedilemedi.",
+        "Gönderim durumu Supabase'e kaydedilemedi.",
       );
     },
     onSuccess: (_data, { sent }) => {
@@ -110,7 +110,7 @@ export function ContactsOverview() {
         queryClient.setQueryData(["contacts"], context.previous);
       }
       toast.error(
-        "Acil durumu Nhost'a kaydedilemedi.",
+        "Acil durumu Supabase'e kaydedilemedi.",
       );
     },
     onSuccess: (_data, { urgent }) => {

@@ -1,6 +1,6 @@
 import { ImportPanel } from "@/components/excel/import-panel";
 import { CurrentRosterPanel } from "@/components/excel/current-roster-panel";
-import { requireAdmin } from "@/lib/nhost/auth";
+import { requireAdmin } from "@/lib/supabase/auth";
 
 export default async function ImportsPage() {
   await requireAdmin();

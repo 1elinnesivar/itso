@@ -60,7 +60,7 @@ import {
   recordMatchesContactFilter,
   UNASSIGNED_CONTACT_FILTER_VALUE,
 } from "@/lib/records";
-import { createClient } from "@/lib/nhost/client";
+import { createClient } from "@/lib/supabase/client";
 import { normalizeText } from "@/lib/utils";
 import {
   AUTHORIZATION_DOCUMENT_RECEIVED,

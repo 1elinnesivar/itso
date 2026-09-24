@@ -1,5 +1,5 @@
 import { LegacyTableView } from "@/components/legacy/legacy-table-view";
-import { requireAdmin } from "@/lib/nhost/auth";
+import { requireAdmin } from "@/lib/supabase/auth";
 
 export default async function LegacyTablePage() {
   await requireAdmin();

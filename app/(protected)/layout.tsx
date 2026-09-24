@@ -1,13 +1,15 @@
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
-import { createNhostServerClient } from "@/lib/nhost/server";
+import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/types/app";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const nhost = await createNhostServerClient();
-  const session = nhost.getUserSession();
-  const user = session?.user;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
     return (
       <AppShell
@@ -19,30 +21,15 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     );
   }
 
-  let data: Profile | null = null;
-  try {
-    const response: any = await nhost.graphql.request({
-      query: `query Profile($id: uuid!) { profiles_by_pk(id: $id) { id display_name role } }`,
-      variables: { id: user.id },
-    });
-    data = response.body?.data?.profiles_by_pk ?? null;
-  } catch {
-    // Keep public records reachable during a transient Auth/GraphQL outage.
-    data = null;
-  }
-  if (!data) {
-    return (
-      <AppShell
-        profile={{ id: "anonymous", display_name: "ZiyaretÃ§i", role: "viewer" }}
-        email=""
-      >
-        {children}
-      </AppShell>
-    );
-  }
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, display_name, role")
+    .eq("id", user.id)
+    .single();
+  if (!data) redirect("/login");
 
   return (
-    <AppShell profile={data} email={user.email ?? ""}>
+    <AppShell profile={data as Profile} email={user.email ?? ""}>
       {children}
     </AppShell>
   );

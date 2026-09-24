@@ -23,7 +23,7 @@ export default function RecordsPage() {
         <AlertCircle className="mx-auto mb-3 h-8 w-8 text-destructive" />
         <h1 className="font-semibold">Veriler yüklenemedi</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Nhost bağlantısını ve kullanıcı yetkilerini kontrol edin.
+          Supabase bağlantısını ve kullanıcı yetkilerini kontrol edin.
         </p>
         <Button className="mt-5" onClick={() => records.refetch()}>Yeniden dene</Button>
       </div>

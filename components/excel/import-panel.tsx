@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { parseWorkbook, type ParsedExcelRow } from "@/lib/excel/records";
 import { fetchAllRecords } from "@/lib/records";
-import { createClient } from "@/lib/nhost/client";
+import { createClient } from "@/lib/supabase/client";
 import { normalizeText } from "@/lib/utils";
 import type { FurnitureRecord } from "@/types/app";
 

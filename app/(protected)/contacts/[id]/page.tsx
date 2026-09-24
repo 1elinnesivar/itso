@@ -1,5 +1,5 @@
 import { ContactProfile } from "@/components/contacts/contact-profile";
-import { requireAdmin } from "@/lib/nhost/auth";
+import { requireAdmin } from "@/lib/supabase/auth";
 
 export default async function ContactProfilePage({
   params,
