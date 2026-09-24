@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/supabase/auth";
+import { requireAdmin } from "@/lib/nhost/auth";
 import { ArchiveList } from "@/components/archive/archive-list";
 
 export default async function ArchivePage() {
@@ -15,4 +15,3 @@ export default async function ArchivePage() {
     </section>
   );
 }
-

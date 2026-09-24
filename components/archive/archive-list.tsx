@@ -5,7 +5,7 @@ import { Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { fetchAllRecords } from "@/lib/records";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/nhost/client";
 
 export function ArchiveList() {
   const queryClient = useQueryClient();
@@ -67,4 +67,3 @@ export function ArchiveList() {
     </div>
   );
 }
-

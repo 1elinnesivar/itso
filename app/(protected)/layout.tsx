@@ -1,15 +1,14 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
-import { createClient } from "@/lib/supabase/server";
+import { createNhostServerClient } from "@/lib/nhost/server";
 import type { Profile } from "@/types/app";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const nhost = await createNhostServerClient();
+  const session = nhost.getUserSession();
+  const user = session?.user;
   if (!user) {
     return (
       <AppShell
@@ -21,11 +20,11 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     );
   }
 
-  const { data } = await supabase
-    .from("profiles")
-    .select("id, display_name, role")
-    .eq("id", user.id)
-    .single();
+  const response: any = await nhost.graphql.request({
+    query: `query Profile($id: uuid!) { profiles_by_pk(id: $id) { id display_name role } }`,
+    variables: { id: user.id },
+  });
+  const data = response.body?.data?.profiles_by_pk;
   if (!data) redirect("/login");
 
   return (

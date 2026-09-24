@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/nhost/client";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/types/app";
 

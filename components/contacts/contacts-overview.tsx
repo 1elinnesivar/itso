@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { parseContactDisplayName } from "@/lib/contacts";
 import { fetchAllRecords, fetchContacts } from "@/lib/records";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/nhost/client";
 import { normalizeText } from "@/lib/utils";
 import type { ContactPerson } from "@/types/app";
 
@@ -66,7 +66,7 @@ export function ContactsOverview() {
         queryClient.setQueryData(["contacts"], context.previous);
       }
       toast.error(
-        "Gönderim durumu kaydedilemedi. Supabase migration’larının uygulandığından emin olun.",
+        "Gönderim durumu Nhost'a kaydedilemedi.",
       );
     },
     onSuccess: (_data, { sent }) => {
@@ -110,7 +110,7 @@ export function ContactsOverview() {
         queryClient.setQueryData(["contacts"], context.previous);
       }
       toast.error(
-        "Acil durumu kaydedilemedi. Yeni Supabase migration’ını uyguladığınızdan emin olun.",
+        "Acil durumu Nhost'a kaydedilemedi.",
       );
     },
     onSuccess: (_data, { urgent }) => {
@@ -126,33 +126,18 @@ export function ContactsOverview() {
   });
 
   useEffect(() => {
-    const supabase = createClient();
     const refreshContacts = () => {
       void queryClient.invalidateQueries({ queryKey: ["contacts"] });
     };
     const refreshRecords = () => {
       void queryClient.invalidateQueries({ queryKey: ["records"] });
     };
-    const channel = supabase
-      .channel("contacts-directory-live")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "contact_people" },
-        refreshContacts,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "record_contacts" },
-        refreshRecords,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "records" },
-        refreshRecords,
-      )
-      .subscribe();
+    const interval = window.setInterval(() => {
+      refreshContacts();
+      refreshRecords();
+    }, 5_000);
     return () => {
-      void supabase.removeChannel(channel);
+      window.clearInterval(interval);
     };
   }, [queryClient]);
 

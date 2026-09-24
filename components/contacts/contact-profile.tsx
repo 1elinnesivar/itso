@@ -29,7 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useRecords } from "@/hooks/use-records";
 import { parseContactDisplayName } from "@/lib/contacts";
 import { downloadContactCompaniesPdf } from "@/lib/pdf/contact-companies";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/nhost/client";
 import {
   CONTACT_WHATSAPP_MESSAGE,
   normalizeWhatsAppNumber,

@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ITSO_STATUS_OPTIONS } from "@/lib/itso-status";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/nhost/client";
 import {
   recordSchema,
   type RecordFormValues,

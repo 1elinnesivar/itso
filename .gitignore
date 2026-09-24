@@ -13,6 +13,8 @@ test-results/
 !.env.example
 .supabase/
 supabase/.temp/
+.npm-cache/
+.migration-backups/
 
 # Confidential source documents, exports, and Excel lock files
 *.xlsx

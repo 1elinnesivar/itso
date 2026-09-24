@@ -1,39 +1,30 @@
 # Mobilya Takip
 
-Excel tabanlı mobilya üye kayıtlarını Supabase üzerinde çok kullanıcılı olarak yöneten Türkçe Next.js uygulaması.
-
-Paylaşılan `/records` bağlantısı giriş yapmadan güvenli, salt okunur özet sunar.
-Anonim görünüm yalnız sıra, unvan, durum, meslek grubu, mahalle ve satır rengini
-gösterir. Telefon, açık adres, yetkili/temas isimleri ve notlar yalnız giriş yapan
-kullanıcılara görünür. Admin ve editör işlemleri Supabase Auth oturumu, RPC rol
-kontrolleri ve RLS ile korunur.
+İTSO mobilya firma kayıtlarını Nhost PostgreSQL üzerinde yöneten Türkçe Next.js uygulamasıdır. `/records` sayfası giriş yapmadan salt okunur kullanılabilir. Nhost Auth ile giriş yapan uygulama yöneticisi kayıtları, temas sorumlularını, içe aktarmaları, arşivi ve denetim geçmişini yönetebilir.
 
 ## Yerel kurulum
 
 1. `npm install` çalıştırın.
-2. `.env.example` dosyasını `.env.local` olarak kopyalayın ve Supabase proje URL’si ile publishable key’i girin.
-3. `supabase/migrations/` altındaki migration’ları dosya adı sırasıyla Supabase projesine uygulayın.
-4. Supabase Dashboard → Authentication üzerinden kullanıcı oluşturun.
-5. İlk admin rolünü SQL Editor üzerinden atayın:
+2. `.env.example` dosyasını `.env.local` olarak kopyalayın.
+3. Nhost proje subdomain ve region değerlerini girin.
+4. `npm run dev` ile uygulamayı başlatın.
 
-   ```sql
-   update public.profiles
-   set role = 'admin'
-   where id = '<auth-user-uuid>';
-   ```
-
-6. `npm run dev` ile uygulamayı açın. Admin hesabıyla **İçe Aktar** ekranına gidip yerel `mobilya-takip.xlsx` dosyasını seçin. Önizleme 390 kayıt gösterdikten sonra aktarımı onaylayın.
-
-## Ortam değişkenleri
-
-Yalnız aşağıdaki istemci-güvenli değerler kullanılır:
-
-```text
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+```env
+NEXT_PUBLIC_NHOST_SUBDOMAIN=your-nhost-subdomain
+NEXT_PUBLIC_NHOST_REGION=eu-central-1
 ```
 
-Service Role Key uygulama tarafından kullanılmaz ve Vercel istemci ortamına eklenmemelidir.
+Bu iki değer istemci tarafında kullanılabilir. `NHOST_ADMIN_SECRET`, PostgreSQL bağlantı adresleri ve parolalar uygulama ortamına veya `NEXT_PUBLIC_*` değişkenlerine eklenmemelidir.
+
+## Veritabanı taşıma araçları
+
+`scripts/` altındaki taşıma araçları yalnız kontrollü geçiş ve bakım için kullanılır:
+
+- `migrate-database-to-nhost.mjs`: uygulama tablolarını ve verileri taşır, içerik özetlerini doğrular.
+- `migrate-functions-to-nhost.mjs`: RPC, optimistic locking ve audit fonksiyonlarını kurar.
+- `configure-nhost-metadata.mjs`: Hasura tablo, rol ve fonksiyon izinlerini uygular.
+
+Bu araçların kullandığı `.env.migration.local` ve `.migration-backups/` Git tarafından yok sayılır.
 
 ## Doğrulama
 
@@ -43,4 +34,4 @@ npm test
 npm run build
 ```
 
-Production’da Vercel projesini private GitHub deposuna bağlayın, iki ortam değişkenini tanımlayın ve Supabase Auth URL Configuration bölümüne Vercel alan adını ekleyin.
+Production dağıtımında Vercel projesine yalnız `NEXT_PUBLIC_NHOST_SUBDOMAIN` ve `NEXT_PUBLIC_NHOST_REGION` değerlerini ekleyin. Ziyaretçi erişimi Hasura `public` rolüyle salt okunur, yönetim işlemleri özel `app_admin` rolüyle sınırlandırılmıştır.

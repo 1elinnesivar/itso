@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/nhost/client";
 import type { AuditLog } from "@/types/app";
 
 const actionNames = {
@@ -64,4 +64,3 @@ export function AuditList() {
     </div>
   );
 }
-

@@ -12,7 +12,7 @@ import {
 } from "@/lib/excel/current-roster";
 import { fetchAllRecords } from "@/lib/records";
 import { fetchLegacyRecords, fetchLegacySnapshots } from "@/lib/legacy-table";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/nhost/client";
 
 export function CurrentRosterPanel() {
   const queryClient = useQueryClient();

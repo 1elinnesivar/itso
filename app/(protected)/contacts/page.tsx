@@ -1,5 +1,5 @@
 import { ContactsOverview } from "@/components/contacts/contacts-overview";
-import { requireAdmin } from "@/lib/supabase/auth";
+import { requireAdmin } from "@/lib/nhost/auth";
 
 export default async function ContactsPage() {
   await requireAdmin();

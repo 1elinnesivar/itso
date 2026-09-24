@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getNhostClient } from "@/lib/nhost/client";
 import type { ContactPerson, FurnitureRecord, Profile } from "@/types/app";
 
 export const UNASSIGNED_CONTACT_FILTER_VALUE = "__unassigned_contact__";
@@ -28,73 +28,48 @@ type PublicRecordRow = Pick<
 >;
 
 export async function fetchAllRecords(includeDeleted = false): Promise<FurnitureRecord[]> {
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    const { data, error } = await supabase.rpc("get_public_records");
-    if (error) throw error;
-    return ((data ?? []) as PublicRecordRow[]).map((record) => ({
-      id: record.id,
-      display_order: record.display_order,
-      member_registry_no: "",
-      trade_registry_no: null,
-      registration_date: null,
-      tax_office_account: null,
-      authority_signature: null,
-      profession_group: record.profession_group,
-      status: record.status,
-      title: record.title,
-      officials: null,
-      origin: null,
-      vote_status: null,
-      notes: null,
-      district: record.district,
-      street: null,
-      registered_address: "",
-      phone_numbers: "",
-      gift: record.gift ?? false,
-      itso_status: record.itso_status ?? null,
-      row_color: record.row_color,
-      version: record.version,
-      created_at: record.updated_at,
-      created_by: null,
-      updated_at: record.updated_at,
-      updated_by: null,
-      deleted_at: null,
-      deleted_by: null,
-      record_contacts: [],
-    })) as FurnitureRecord[];
-  }
-
-  const pageSize = 750;
+  const nhost = getNhostClient();
+  const authenticated = Boolean(nhost.getUserSession());
+  const deletedFilter = authenticated
+    ? includeDeleted
+      ? "{deleted_at:{_is_null:false}}"
+      : "{deleted_at:{_is_null:true}}"
+    : null;
+  const actorFields = authenticated
+    ? "created_by updated_by deleted_at deleted_by"
+    : "";
+  const query = `query Records($limit:Int!,$offset:Int!){
+    records(${deletedFilter ? `where:${deletedFilter},` : ""}order_by:{display_order:asc},limit:$limit,offset:$offset){
+      id display_order member_registry_no trade_registry_no registration_date tax_office_account authority_signature profession_group status title officials origin vote_status notes district street registered_address phone_numbers gift itso_status row_color version created_at updated_at ${actorFields}
+    }
+    record_contacts { record_id contact_person_id position }
+    contact_people { id display_name normalized_name }
+  }`;
   const result: FurnitureRecord[] = [];
-  let from = 0;
-
-  while (true) {
-    let query = supabase
-      .from("records")
-      .select(RECORD_SELECT)
-      .order("display_order")
-      .range(from, from + pageSize - 1);
-    query = includeDeleted ? query.not("deleted_at", "is", null) : query.is("deleted_at", null);
-    const { data, error } = await query;
-    if (error) throw error;
-    const page = (data ?? []) as unknown as FurnitureRecord[];
-    result.push(
-      ...page.map((record) => ({
-        ...record,
-        record_contacts: [...(record.record_contacts ?? [])].sort(
-          (a, b) => a.position - b.position,
-        ),
-      })),
-    );
-    if (page.length < pageSize) break;
-    from += pageSize;
+  const contacts = new Map<string, ContactPerson>();
+  let links: Array<{ record_id: string; contact_person_id: string; position: number }> = [];
+  for (let offset = 0; ; offset += 1000) {
+    const response: any = await nhost.graphql.request({ query, variables: { limit: 1000, offset } });
+    if (response.body?.errors?.length) throw new Error(response.body.errors[0].message);
+    const page = (response.body?.data?.records ?? []) as FurnitureRecord[];
+    if (offset === 0) {
+      for (const contact of response.body?.data?.contact_people ?? []) contacts.set(contact.id, contact);
+      links = response.body?.data?.record_contacts ?? [];
+    }
+    result.push(...page);
+    if (page.length < 1000) break;
   }
-  return result;
+  return result.map((record) => ({
+    ...record,
+    created_by: record.created_by ?? null,
+    updated_by: record.updated_by ?? null,
+    deleted_at: record.deleted_at ?? null,
+    deleted_by: record.deleted_by ?? null,
+    record_contacts: links
+      .filter((link) => link.record_id === record.id && contacts.has(link.contact_person_id))
+      .map((link) => ({ ...link, contact_people: contacts.get(link.contact_person_id)! }))
+      .sort((left, right) => left.position - right.position),
+  }));
 }
 
 export async function fetchContacts(): Promise<ContactPerson[]> {
