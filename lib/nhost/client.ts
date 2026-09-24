@@ -90,6 +90,18 @@ export function getNhostClient() {
 
 const noArgumentRpcs = new Set(["archive_current_table", "clear_current_table_without_snapshot"]);
 
+function serializeRpcArgs(args: Record<string, unknown>) {
+  const serialized = { ...args };
+
+  // Hasura exposes PostgreSQL uuid[] function arguments as the `_uuid` scalar,
+  // so GraphQL expects PostgreSQL's array literal instead of a JSON array.
+  if (Array.isArray(serialized.p_contact_ids)) {
+    serialized.p_contact_ids = `{${serialized.p_contact_ids.join(",")}}`;
+  }
+
+  return serialized;
+}
+
 export function createClient() {
   const nhost = getNhostClient();
   return {
@@ -119,7 +131,10 @@ export function createClient() {
         ? `mutation Rpc($args: ${field}_args!) { ${field}(args: $args) { payload } }`
         : `mutation Rpc { ${field} { payload } }`;
       try {
-        const response: any = await nhost.graphql.request({ query, variables: hasArguments ? { args } : undefined });
+        const response: any = await nhost.graphql.request({
+          query,
+          variables: hasArguments ? { args: serializeRpcArgs(args) } : undefined,
+        });
         const error = errorFrom(response);
         const result = response.body?.data?.[field]?.[0]?.payload ?? null;
         return { data: result, error };
