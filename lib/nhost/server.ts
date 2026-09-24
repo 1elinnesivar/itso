@@ -41,5 +41,10 @@ export async function refreshNhostSession(request: NextRequest, response: NextRe
       remove: () => response.cookies.delete(DEFAULT_SESSION_KEY),
     },
   });
-  return client.refreshSession(60);
+  try {
+    return await client.refreshSession(60);
+  } catch {
+    response.cookies.delete(DEFAULT_SESSION_KEY);
+    return null;
+  }
 }
