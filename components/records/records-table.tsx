@@ -133,9 +133,8 @@ const colorLabels = {
   "": "Renksiz",
 } as const;
 
-const uncertainVoteStatuses = ["", "Ziyaret Edilecek", "Ziyaret Edildi"];
-const uncertainItsoStatuses = [""];
-const uncertainRowColors = ["yellow", "green", ""];
+// SORUMLU FİRMALAR: Sarı, Yeşil ve Renksiz (beyaz) satırlar.
+const responsibleCompanyRowColors = ["yellow", "green", ""];
 
 function hasSameValues(current: string[], expected: string[]) {
   return current.length === expected.length &&
@@ -338,7 +337,12 @@ export function RecordsTable({
       }
     : {};
   const [globalFilter, setGlobalFilter] = useState("");
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  // Güncel tabloda SORUMLU FİRMALAR filtresi varsayılan olarak seçili gelir.
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() =>
+    isCurrentTable && !isAnonymous
+      ? [{ id: "row_color_filter", value: responsibleCompanyRowColors }]
+      : [],
+  );
   const [sorting, setSorting] = useState<SortingState>([{ id: "display_order", desc: false }]);
   const [visibility, setVisibility] = useState<VisibilityState>({
     ...publicHiddenColumns,
@@ -929,19 +933,14 @@ export function RecordsTable({
   }
 
   const filterValue = (id: string) => (table.getColumn(id)?.getFilterValue() as string[]) ?? [];
-  const uncertainFilterActive =
-    hasSameValues(filterValue("vote_status"), uncertainVoteStatuses) &&
-    hasSameValues(filterValue("itso_status"), uncertainItsoStatuses) &&
-    hasSameValues(filterValue("row_color_filter"), uncertainRowColors);
+  const responsibleCompaniesFilterActive = hasSameValues(
+    filterValue("row_color_filter"),
+    responsibleCompanyRowColors,
+  );
 
-  function toggleUncertainFilter() {
-    const next = uncertainFilterActive ? undefined : uncertainVoteStatuses;
-    table.getColumn("vote_status")?.setFilterValue(next);
-    table.getColumn("itso_status")?.setFilterValue(
-      uncertainFilterActive ? undefined : uncertainItsoStatuses,
-    );
+  function toggleResponsibleCompaniesFilter() {
     table.getColumn("row_color_filter")?.setFilterValue(
-      uncertainFilterActive ? undefined : uncertainRowColors,
+      responsibleCompaniesFilterActive ? undefined : responsibleCompanyRowColors,
     );
     setPagination((current) => ({ ...current, pageIndex: 0 }));
   }
@@ -1178,12 +1177,12 @@ export function RecordsTable({
             <Button
               type="button"
               size="sm"
-              variant={uncertainFilterActive ? "default" : "outline"}
-              onClick={toggleUncertainFilter}
-              title="Oy Durumu: Boş/Ziyaret; İTSO: Boş; Renk: Sarı/Yeşil/Renksiz"
+              variant={responsibleCompaniesFilterActive ? "default" : "outline"}
+              onClick={toggleResponsibleCompaniesFilter}
+              title="Satır rengi: Sarı, Yeşil ve Renksiz (beyaz)"
             >
               <Filter className="h-4 w-4" />
-              BELİRSİZ
+              SORUMLU FİRMALAR
             </Button>
           )}
           <div className="hidden flex-wrap items-center gap-2 md:flex">
