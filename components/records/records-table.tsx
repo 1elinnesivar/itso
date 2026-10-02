@@ -1246,7 +1246,7 @@ export function RecordsTable({
                 SORUMLU FİRMALAR
               </Button>
             )}
-            <div className="ml-auto flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
             {!isAnonymous && <div className="hidden lg:block">
             {canExport && <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
