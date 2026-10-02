@@ -997,6 +997,7 @@ export function RecordsTable({
         type="button"
         variant="ghost"
         size="sm"
+        title="Filtreleri temizle"
         onClick={() => {
           setColumnFilters([]);
           setGlobalFilter("");
@@ -1004,7 +1005,7 @@ export function RecordsTable({
         }}
       >
         <X className="h-4 w-4" />
-        Filtreleri temizle
+        Temizle
       </Button>
     );
 
@@ -1140,84 +1141,84 @@ export function RecordsTable({
     <>
       <div className="space-y-4">
         <div className="flex flex-wrap gap-1.5 md:gap-2">
-          <div className="flex h-9 flex-[1_1_auto] items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+          <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600" />
-            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
+            <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
               Kırmızı
             </span>
-            <span className="shrink-0 text-sm font-bold tabular-nums text-red-700">
+            <span className="ml-1 shrink-0 text-sm font-bold tabular-nums text-red-700">
               {colorCounts.red}
             </span>
           </div>
-          <div className="flex h-9 flex-[1_1_auto] items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+          <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-yellow-400" />
-            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
+            <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
               Sarı
             </span>
-            <span className="shrink-0 text-sm font-bold tabular-nums text-yellow-700">
+            <span className="ml-1 shrink-0 text-sm font-bold tabular-nums text-yellow-700">
               {colorCounts.yellow}
             </span>
           </div>
-          <div className="flex h-9 flex-[1_1_auto] items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+          <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-green-600" />
-            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
+            <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
               Yeşil
             </span>
-            <span className="shrink-0 text-sm font-bold tabular-nums text-green-700">
+            <span className="ml-1 shrink-0 text-sm font-bold tabular-nums text-green-700">
               {colorCounts.green}
             </span>
           </div>
-          <div className="flex h-9 flex-[1_1_auto] items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+          <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-blue-600" />
-            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
+            <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
               Mavi
             </span>
-            <span className="shrink-0 text-sm font-bold tabular-nums text-blue-700">
+            <span className="ml-1 shrink-0 text-sm font-bold tabular-nums text-blue-700">
               {colorCounts.blue}
             </span>
           </div>
-          <div className="flex h-9 flex-[1_1_auto] items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+          <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full border bg-muted" />
-            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
+            <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
               Renksiz
             </span>
-            <span className="shrink-0 text-sm font-bold tabular-nums">
+            <span className="ml-1 shrink-0 text-sm font-bold tabular-nums">
               {colorCounts.none}
             </span>
           </div>
           <div className=" flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-slate-600" />
-            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
+            <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
               Yetki Belgesi Alındı
             </span>
-            <span className="shrink-0 text-sm font-bold tabular-nums text-slate-700">
+            <span className="ml-1 shrink-0 text-sm font-bold tabular-nums text-slate-700">
               {authorizationDocumentCount}
             </span>
           </div>
           <div className=" flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-600" />
-            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
+            <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
               İTSO'da
             </span>
-            <span className="shrink-0 text-sm font-bold tabular-nums text-cyan-700">
+            <span className="ml-1 shrink-0 text-sm font-bold tabular-nums text-cyan-700">
               {atItsoCount}
             </span>
           </div>
           <div className=" flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-violet-600" />
-            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
+            <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
               İTSO Onaylandı
             </span>
-            <span className="shrink-0 text-sm font-bold tabular-nums text-violet-700">
+            <span className="ml-1 shrink-0 text-sm font-bold tabular-nums text-violet-700">
               {itsoApprovedCount}
             </span>
           </div>
           <div className=" flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-rose-600" />
-            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
+            <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
               Rakip Onaylattı
             </span>
-            <span className="shrink-0 text-sm font-bold tabular-nums text-rose-700">
+            <span className="ml-1 shrink-0 text-sm font-bold tabular-nums text-rose-700">
               {rivalApprovedCount}
             </span>
           </div>
@@ -1225,7 +1226,7 @@ export function RecordsTable({
 
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-0 flex-1 basis-64 sm:max-w-md">
+            <div className="relative min-w-0 flex-1 basis-64">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 className="pl-9"
@@ -1234,19 +1235,7 @@ export function RecordsTable({
                 placeholder="Tüm kayıtlarda ara..."
               />
             </div>
-            {!isAnonymous && (
-              <Button
-                type="button"
-                size="sm"
-                variant={responsibleCompaniesFilterActive ? "default" : "outline"}
-                onClick={toggleResponsibleCompaniesFilter}
-                title="Satır rengi: Sarı, Yeşil ve Renksiz (beyaz)"
-              >
-                <Filter className="h-4 w-4" />
-                SORUMLU FİRMALAR
-              </Button>
-            )}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="ml-auto flex flex-wrap items-center gap-2">
             {!isAnonymous && <div className="hidden lg:block">
             {canExport && <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
@@ -1325,10 +1314,24 @@ export function RecordsTable({
             )}
             </div>
           </div>
-          <div className="hidden flex-wrap items-center gap-2 md:flex">
-            {renderMultiFilters()}
-            {renderClearFilters()}
-          </div>
+          <div className="flex flex-wrap items-center gap-2">
+              {!isAnonymous && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={responsibleCompaniesFilterActive ? "default" : "outline"}
+                  onClick={toggleResponsibleCompaniesFilter}
+                  title="Satır rengi: Sarı, Yeşil ve Renksiz (beyaz)"
+                >
+                  <Filter className="h-4 w-4" />
+                  SORUMLU FİRMALAR
+                </Button>
+              )}
+            {!isAnonymous && <span className="hidden h-6 w-px bg-border md:block" />}
+            <div className="hidden md:contents">
+              {renderMultiFilters()}
+              {renderClearFilters()}
+            </div>
           <details className="w-full rounded-md border bg-background md:hidden">
             <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm font-medium">
               <Filter className="h-4 w-4" />
@@ -1343,6 +1346,7 @@ export function RecordsTable({
               {renderClearFilters()}
             </div>
           </details>
+          </div>
         </div>
 
         <div className="rounded-lg border bg-background shadow-sm">
