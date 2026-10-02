@@ -33,6 +33,7 @@ import {
   Search,
   SlidersHorizontal,
   Trash2,
+  X,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -156,6 +157,34 @@ function rowColorClasses(color: FurnitureRecord["row_color"]) {
   }
   return "hover:bg-muted/50";
 }
+
+// Sabit (sticky) hücreler kaydırılan içeriği örtmek için opak zemin kullanır.
+function stickyCellClasses(color: FurnitureRecord["row_color"]) {
+  if (color === "yellow") return "bg-yellow-100 group-hover:bg-yellow-200";
+  if (color === "green") return "bg-green-100 group-hover:bg-green-200";
+  if (color === "red") return "bg-red-100 group-hover:bg-red-200";
+  if (color === "blue") return "bg-blue-100 group-hover:bg-blue-200";
+  return "bg-background group-hover:bg-muted";
+}
+
+function rowStripeClasses(color: FurnitureRecord["row_color"]) {
+  if (color === "yellow") return "shadow-[inset_4px_0_0_#eab308]";
+  if (color === "green") return "shadow-[inset_4px_0_0_#16a34a]";
+  if (color === "red") return "shadow-[inset_4px_0_0_#dc2626]";
+  if (color === "blue") return "shadow-[inset_4px_0_0_#2563eb]";
+  return "";
+}
+
+// Yatay kaydırmada Sıra ve Unvan görünür kalır.
+const STICKY_COLUMNS = ["display_order", "title"];
+const TEXT_FILTER_EXCLUDED_COLUMNS = [
+  "display_order",
+  "status",
+  "vote_status",
+  "origin",
+  "district",
+  "itso_status",
+];
 
 function ColorMenu({
   record,
@@ -281,6 +310,7 @@ function makeColumn(
     id,
     accessorKey: id,
     header: ({ column }) => <SortHeader label={label} column={column} />,
+    meta: { label },
     size,
     filterFn: textFilter,
     cell:
@@ -509,6 +539,7 @@ export function RecordsTable({
               accessorFn: (record: FurnitureRecord) =>
                 responsibleNames.get(record.responsible_person_id ?? "") ?? "",
               header: ({ column }) => <SortHeader label="SORUMLU KİŞİ" column={column} />,
+              meta: { label: "SORUMLU KİŞİ" },
               size: 190,
               enableColumnFilter: false,
               cell: ({ row }) => (
@@ -551,6 +582,7 @@ export function RecordsTable({
           id: `contact_${position}`,
           accessorFn: (record) => contactAt(record, position),
           header: ({ column }) => <SortHeader label={`TEMAS ${position}`} column={column} />,
+          meta: { label: `TEMAS ${position}` },
           size: 160,
           filterFn: textFilter,
         }),
@@ -945,8 +977,36 @@ export function RecordsTable({
     setPagination((current) => ({ ...current, pageIndex: 0 }));
   }
 
+  const stickyOffsets = new Map<string, number>();
+  {
+    let offset = 0;
+    for (const header of table.getHeaderGroups()[0]?.headers ?? []) {
+      if (!STICKY_COLUMNS.includes(header.column.id)) continue;
+      stickyOffsets.set(header.column.id, offset);
+      offset += header.getSize();
+    }
+  }
+
   const filteredRecords = table.getFilteredRowModel().rows.map((row) => row.original);
   const sortedFilteredRecords = table.getSortedRowModel().rows.map((row) => row.original);
+
+  const hasActiveFilters = columnFilters.length > 0 || Boolean(globalFilter);
+  const renderClearFilters = () =>
+    hasActiveFilters && (
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          setColumnFilters([]);
+          setGlobalFilter("");
+          setPagination((current) => ({ ...current, pageIndex: 0 }));
+        }}
+      >
+        <X className="h-4 w-4" />
+        Filtreleri temizle
+      </Button>
+    );
 
   const renderMultiFilters = () => (
     <>
@@ -1079,82 +1139,82 @@ export function RecordsTable({
   return (
     <>
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4 md:gap-2 lg:grid-cols-6 xl:grid-cols-[repeat(14,minmax(0,1fr))]">
-          <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+        <div className="flex flex-wrap gap-1.5 md:gap-2">
+          <div className="flex h-9 flex-[1_1_auto] items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600" />
-            <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
+            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
               Kırmızı
             </span>
             <span className="shrink-0 text-sm font-bold tabular-nums text-red-700">
               {colorCounts.red}
             </span>
           </div>
-          <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+          <div className="flex h-9 flex-[1_1_auto] items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-yellow-400" />
-            <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
+            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
               Sarı
             </span>
             <span className="shrink-0 text-sm font-bold tabular-nums text-yellow-700">
               {colorCounts.yellow}
             </span>
           </div>
-          <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+          <div className="flex h-9 flex-[1_1_auto] items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-green-600" />
-            <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
+            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
               Yeşil
             </span>
             <span className="shrink-0 text-sm font-bold tabular-nums text-green-700">
               {colorCounts.green}
             </span>
           </div>
-          <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+          <div className="flex h-9 flex-[1_1_auto] items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-blue-600" />
-            <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
+            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
               Mavi
             </span>
             <span className="shrink-0 text-sm font-bold tabular-nums text-blue-700">
               {colorCounts.blue}
             </span>
           </div>
-          <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+          <div className="flex h-9 flex-[1_1_auto] items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full border bg-muted" />
-            <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
+            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
               Renksiz
             </span>
             <span className="shrink-0 text-sm font-bold tabular-nums">
               {colorCounts.none}
             </span>
           </div>
-          <div className="col-span-2 flex h-9 items-center gap-2 overflow-hidden rounded-md border bg-background px-2.5 shadow-sm md:col-span-3 lg:col-span-2 xl:col-span-3">
+          <div className=" flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-slate-600" />
-            <span className="min-w-0 flex-1 text-xs font-medium leading-tight text-muted-foreground">
+            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
               Yetki Belgesi Alındı
             </span>
             <span className="shrink-0 text-sm font-bold tabular-nums text-slate-700">
               {authorizationDocumentCount}
             </span>
           </div>
-          <div className="col-span-1 flex h-9 items-center gap-2 overflow-hidden rounded-md border bg-background px-2.5 shadow-sm md:col-span-2">
+          <div className=" flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-600" />
-            <span className="min-w-0 flex-1 text-xs font-medium leading-tight text-muted-foreground">
+            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
               İTSO'da
             </span>
             <span className="shrink-0 text-sm font-bold tabular-nums text-cyan-700">
               {atItsoCount}
             </span>
           </div>
-          <div className="col-span-1 flex h-9 items-center gap-2 overflow-hidden rounded-md border bg-background px-2.5 shadow-sm md:col-span-2">
+          <div className=" flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-violet-600" />
-            <span className="min-w-0 flex-1 text-xs font-medium leading-tight text-muted-foreground">
+            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
               İTSO Onaylandı
             </span>
             <span className="shrink-0 text-sm font-bold tabular-nums text-violet-700">
               {itsoApprovedCount}
             </span>
           </div>
-          <div className="col-span-2 flex h-9 items-center gap-2 overflow-hidden rounded-md border bg-background px-2.5 shadow-sm md:col-span-2">
+          <div className=" flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-rose-600" />
-            <span className="min-w-0 flex-1 text-xs font-medium leading-tight text-muted-foreground">
+            <span className="flex-1 whitespace-nowrap text-xs font-medium text-muted-foreground">
               Rakip Onaylattı
             </span>
             <span className="shrink-0 text-sm font-bold tabular-nums text-rose-700">
@@ -1163,30 +1223,111 @@ export function RecordsTable({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative min-w-64 flex-1 sm:max-w-md">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              value={globalFilter}
-              onChange={(event) => setGlobalFilter(event.target.value)}
-              placeholder="Tüm kayıtlarda ara..."
-            />
-          </div>
-          {!isAnonymous && (
-            <Button
-              type="button"
-              size="sm"
-              variant={responsibleCompaniesFilterActive ? "default" : "outline"}
-              onClick={toggleResponsibleCompaniesFilter}
-              title="Satır rengi: Sarı, Yeşil ve Renksiz (beyaz)"
-            >
-              <Filter className="h-4 w-4" />
-              SORUMLU FİRMALAR
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-0 flex-1 basis-64 sm:max-w-md">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                value={globalFilter}
+                onChange={(event) => setGlobalFilter(event.target.value)}
+                placeholder="Tüm kayıtlarda ara..."
+              />
+            </div>
+            {!isAnonymous && (
+              <Button
+                type="button"
+                size="sm"
+                variant={responsibleCompaniesFilterActive ? "default" : "outline"}
+                onClick={toggleResponsibleCompaniesFilter}
+                title="Satır rengi: Sarı, Yeşil ve Renksiz (beyaz)"
+              >
+                <Filter className="h-4 w-4" />
+                SORUMLU FİRMALAR
+              </Button>
+            )}
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+            {!isAnonymous && <div className="hidden lg:block">
+            {canExport && <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <Button variant="outline" size="sm">
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Sütunlar
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content className="z-50 max-h-96 overflow-y-auto rounded-md border bg-background p-1 shadow-lg">
+                  {table
+                    .getAllLeafColumns()
+                    .filter(
+                      (column) =>
+                        column.getCanHide() &&
+                        !FILTER_ONLY_COLUMNS.includes(column.id),
+                    )
+                    .map((column) => (
+                      <DropdownMenu.CheckboxItem
+                        key={column.id}
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) => column.toggleVisibility(Boolean(value))}
+                        onSelect={(event) => event.preventDefault()}
+                        className="relative cursor-pointer rounded py-2 pl-8 pr-3 text-sm outline-none hover:bg-muted"
+                      >
+                        {column.getIsVisible() && <Check className="absolute left-2 top-2.5 h-4 w-4" />}
+                        {(column.columnDef.meta as { label?: string } | undefined)?.label ??
+                          (typeof column.columnDef.header === "string"
+                            ? column.columnDef.header
+                            : column.id)}
+                      </DropdownMenu.CheckboxItem>
+                    ))}
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>}
+            </div>}
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4" />
+                  Excel
+                </Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content className="z-50 rounded-md border bg-background p-1 shadow-lg" align="end">
+                  <DropdownMenu.Item
+                    className="flex cursor-pointer gap-2 rounded px-3 py-2 text-sm outline-none hover:bg-muted"
+                    onSelect={() => exportRecords(records, "mobilya-takip-tum")}
+                  >
+                    <FileDown className="h-4 w-4" /> Tüm kayıtları indir
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    className="flex cursor-pointer gap-2 rounded px-3 py-2 text-sm outline-none hover:bg-muted"
+                    onSelect={() => exportRecords(sortedFilteredRecords, "mobilya-takip-filtreli")}
+                  >
+                    <FileDown className="h-4 w-4" /> Filtrelenenleri indir
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+            <Button variant="ghost" size="icon" onClick={onRefresh} title="Yenile">
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
-          )}
+            {editable && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setSelected(null);
+                  setDialogOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Yeni kayıt
+              </Button>
+            )}
+            </div>
+          </div>
           <div className="hidden flex-wrap items-center gap-2 md:flex">
             {renderMultiFilters()}
+            {renderClearFilters()}
           </div>
           <details className="w-full rounded-md border bg-background md:hidden">
             <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm font-medium">
@@ -1199,86 +1340,17 @@ export function RecordsTable({
             </summary>
             <div className="flex flex-wrap gap-2 border-t p-3">
               {renderMultiFilters()}
+              {renderClearFilters()}
             </div>
           </details>
-          {!isAnonymous && <div className="hidden md:block">
-          {canExport && <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              <Button variant="outline" size="sm">
-                <SlidersHorizontal className="h-4 w-4" />
-                Sütunlar
-                <ChevronDown className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content className="z-50 max-h-96 overflow-y-auto rounded-md border bg-background p-1 shadow-lg">
-                {table
-                  .getAllLeafColumns()
-                  .filter(
-                    (column) =>
-                      column.getCanHide() &&
-                      !FILTER_ONLY_COLUMNS.includes(column.id),
-                  )
-                  .map((column) => (
-                    <DropdownMenu.CheckboxItem
-                      key={column.id}
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) => column.toggleVisibility(Boolean(value))}
-                      onSelect={(event) => event.preventDefault()}
-                      className="relative cursor-pointer rounded py-2 pl-8 pr-3 text-sm outline-none hover:bg-muted"
-                    >
-                      {column.getIsVisible() && <Check className="absolute left-2 top-2.5 h-4 w-4" />}
-                      {typeof column.columnDef.header === "string" ? column.columnDef.header : column.id}
-                    </DropdownMenu.CheckboxItem>
-                  ))}
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>}
-          </div>}
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4" />
-                Excel
-              </Button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content className="z-50 rounded-md border bg-background p-1 shadow-lg" align="end">
-                <DropdownMenu.Item
-                  className="flex cursor-pointer gap-2 rounded px-3 py-2 text-sm outline-none hover:bg-muted"
-                  onSelect={() => exportRecords(records, "mobilya-takip-tum")}
-                >
-                  <FileDown className="h-4 w-4" /> Tüm kayıtları indir
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  className="flex cursor-pointer gap-2 rounded px-3 py-2 text-sm outline-none hover:bg-muted"
-                  onSelect={() => exportRecords(sortedFilteredRecords, "mobilya-takip-filtreli")}
-                >
-                  <FileDown className="h-4 w-4" /> Filtrelenenleri indir
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
-          <Button variant="ghost" size="icon" onClick={onRefresh} title="Yenile">
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          </Button>
-          {editable && (
-            <Button
-              size="sm"
-              onClick={() => {
-                setSelected(null);
-                setDialogOpen(true);
-              }}
-            >
-              <Plus className="h-4 w-4" />
-              Yeni kayıt
-            </Button>
-          )}
         </div>
 
         <div className="rounded-lg border bg-background shadow-sm">
-          <div className="hidden max-h-[calc(100vh-17rem)] overflow-auto md:block">
-            <table className="w-full min-w-[2900px] border-collapse text-sm">
+          <div className="hidden max-h-[calc(100dvh-14rem)] overflow-auto lg:block">
+            <table
+              className="min-w-full table-fixed border-separate border-spacing-0 text-sm"
+              style={{ width: table.getTotalSize() }}
+            >
               <thead className="sticky top-0 z-20 bg-muted">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
@@ -1290,14 +1362,19 @@ export function RecordsTable({
                       .map((header) => (
                         <th
                           key={header.id}
-                          style={{ width: header.getSize() }}
-                          className="border-b border-r px-3 py-3 text-left align-top"
+                          style={{
+                            width: header.getSize(),
+                            left: stickyOffsets.get(header.column.id),
+                          }}
+                          className={`border-b border-r bg-muted px-3 py-3 text-left align-top ${
+                            stickyOffsets.has(header.column.id)
+                              ? `sticky z-30 ${header.column.id === "title" ? "shadow-[4px_0_6px_-4px_rgba(0,0,0,0.25)]" : ""}`
+                              : ""
+                          }`}
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
                           {header.column.getCanFilter() &&
-                            !["status", "vote_status", "origin", "district"].includes(
-                              header.column.id,
-                            ) && (
+                            !TEXT_FILTER_EXCLUDED_COLUMNS.includes(header.column.id) && (
                               <Input
                                 className="mt-2 h-8 bg-background font-normal"
                                 value={String(header.column.getFilterValue() ?? "")}
@@ -1315,7 +1392,7 @@ export function RecordsTable({
                 {table.getRowModel().rows.map((row) => (
                   <tr
                     key={row.id}
-                    className={`border-b align-top ${rowColorClasses(row.original.row_color)}`}
+                    className={`group align-top ${rowColorClasses(row.original.row_color).replace(/border-l-\S+/g, "")}`}
                   >
                     {row
                       .getVisibleCells()
@@ -1326,11 +1403,18 @@ export function RecordsTable({
                       .map((cell) => (
                         <td
                           key={cell.id}
-                          className={`max-w-md border-r px-3 py-3 ${
-                            editable && cell.column.id !== "actions"
-                              ? "cursor-pointer transition-colors hover:bg-primary/5"
-                              : ""
-                          }`}
+                          style={{ left: stickyOffsets.get(cell.column.id) }}
+                          className={`break-words border-b border-r px-3 py-3 ${
+                            stickyOffsets.has(cell.column.id)
+                              ? `sticky z-10 ${stickyCellClasses(row.original.row_color)} ${
+                                  cell.column.id === "title"
+                                    ? "shadow-[4px_0_6px_-4px_rgba(0,0,0,0.25)]"
+                                    : rowStripeClasses(row.original.row_color)
+                                }`
+                              : editable && cell.column.id !== "actions"
+                                ? "transition-colors hover:bg-primary/5"
+                                : ""
+                          } ${editable && cell.column.id !== "actions" ? "cursor-pointer" : ""}`}
                           title={
                             editable && cell.column.id !== "actions"
                               ? "Kaydı düzenlemek için tıklayın"
@@ -1349,7 +1433,10 @@ export function RecordsTable({
                 ))}
                 {!table.getRowModel().rows.length && (
                   <tr>
-                    <td colSpan={19} className="p-12 text-center text-muted-foreground">
+                    <td
+                      colSpan={table.getVisibleLeafColumns().length}
+                      className="p-12 text-center text-muted-foreground"
+                    >
                       Filtrelere uygun kayıt bulunamadı.
                     </td>
                   </tr>
@@ -1357,7 +1444,7 @@ export function RecordsTable({
               </tbody>
             </table>
           </div>
-          <div className="space-y-3 p-3 md:hidden">
+          <div className="grid gap-3 p-3 md:grid-cols-2 lg:hidden">
             {table.getRowModel().rows.map((row) => {
               const record = row.original;
               const recordContactEntries = [...record.record_contacts]
@@ -1551,7 +1638,7 @@ export function RecordsTable({
               );
             })}
             {!table.getRowModel().rows.length && (
-              <p className="py-10 text-center text-sm text-muted-foreground">
+              <p className="py-10 text-center text-sm text-muted-foreground md:col-span-2">
                 Filtrelere uygun kayıt bulunamadı.
               </p>
             )}

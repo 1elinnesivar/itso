@@ -432,7 +432,10 @@ export function RecordFormDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
+        <DialogContent
+          className="pb-0"
+          onOpenAutoFocus={(event) => event.preventDefault()}
+        >
         <DialogHeader>
           <DialogTitle>{record ? (editable ? "Kaydı düzenle" : "Kayıt ayrıntısı") : "Yeni kayıt"}</DialogTitle>
           <DialogDescription>
@@ -478,6 +481,79 @@ export function RecordFormDialog({
                 )}
               </label>
             ))}
+            {isCurrentTable && (
+              <div className="grid gap-4 rounded-lg border bg-muted/40 p-4 sm:col-span-2 sm:grid-cols-2">
+                <p className="text-sm font-semibold sm:col-span-2">Takip</p>
+                <label className="space-y-1.5 text-sm font-medium">
+                  Sorumlu Kişi
+                  <select
+                    className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                    {...form.register("responsible_person_id")}
+                  >
+                    <option value="">Seçiniz</option>
+                    {responsiblePeople.map((person) => (
+                      <option key={person.id} value={person.id}>
+                        {person.display_name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-1.5 text-sm font-medium">
+                  İTSO Durumu
+                  <select
+                    className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                    {...form.register("itso_status")}
+                  >
+                    <option value="">Seçiniz</option>
+                    {ITSO_STATUS_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {editable && (
+                  <div className="flex gap-2 sm:col-span-2">
+                    <Input
+                      value={newResponsible}
+                      onChange={(event) => setNewResponsible(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          void addResponsible();
+                        }
+                      }}
+                      placeholder="Listede yoksa yeni sorumlu kişi ekleyin"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => void addResponsible()}
+                      disabled={addingResponsible}
+                    >
+                      {addingResponsible ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                      Ekle
+                    </Button>
+                  </div>
+                )}
+                <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md border bg-background px-3 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5 rounded border accent-primary"
+                    {...form.register("attended_election")}
+                  />
+                  Seçime Geldi
+                </label>
+                <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md border bg-background px-3 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5 rounded border accent-primary"
+                    {...form.register("gift")}
+                  />
+                  Hediye
+                </label>
+              </div>
+            )}
             {[
               ["officials", "Yetkililer"],
               ["notes", "Notlar"],
@@ -489,77 +565,29 @@ export function RecordFormDialog({
                 <Textarea {...form.register(name as keyof RecordFormValues)} />
               </label>
             ))}
-            <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md border bg-background px-3 text-sm font-medium sm:col-span-2">
-              <input
-                type="checkbox"
-                className="h-5 w-5 rounded border accent-primary"
-                {...form.register("gift")}
-              />
-              Hediye
-            </label>
-            <label className="space-y-1.5 text-sm font-medium sm:col-span-2">
-              İTSO Durumu
-              <select
-                className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-                {...form.register("itso_status")}
-              >
-                <option value="">Seçiniz</option>
-                {ITSO_STATUS_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {isCurrentTable && (
+            {!isCurrentTable && (
               <>
-                <div className="space-y-2 sm:col-span-2">
-                  <label className="block space-y-1.5 text-sm font-medium">
-                    Sorumlu Kişi
-                    <select
-                      className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-                      {...form.register("responsible_person_id")}
-                    >
-                      <option value="">Seçiniz</option>
-                      {responsiblePeople.map((person) => (
-                        <option key={person.id} value={person.id}>
-                          {person.display_name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {editable && (
-                    <div className="flex gap-2">
-                      <Input
-                        value={newResponsible}
-                        onChange={(event) => setNewResponsible(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") {
-                            event.preventDefault();
-                            void addResponsible();
-                          }
-                        }}
-                        placeholder="Yeni sorumlu kişi"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => void addResponsible()}
-                        disabled={addingResponsible}
-                      >
-                        {addingResponsible ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                        Ekle
-                      </Button>
-                    </div>
-                  )}
-                </div>
                 <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md border bg-background px-3 text-sm font-medium sm:col-span-2">
                   <input
                     type="checkbox"
                     className="h-5 w-5 rounded border accent-primary"
-                    {...form.register("attended_election")}
+                    {...form.register("gift")}
                   />
-                  Seçime Geldi
+                  Hediye
+                </label>
+                <label className="space-y-1.5 text-sm font-medium sm:col-span-2">
+                  İTSO Durumu
+                  <select
+                    className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                    {...form.register("itso_status")}
+                  >
+                    <option value="">Seçiniz</option>
+                    {ITSO_STATUS_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               </>
             )}
@@ -614,7 +642,7 @@ export function RecordFormDialog({
             </div>
             )}
           </fieldset>
-          <div className="flex justify-end gap-2">
+          <div className="sticky bottom-0 -mx-6 flex justify-end gap-2 border-t bg-background px-6 py-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {editable ? "Vazgeç" : "Kapat"}
             </Button>
