@@ -25,7 +25,8 @@ export const EXCEL_HEADERS = [
   "HEDİYE",
 ] as const;
 
-export interface ParsedExcelRow extends RecordPayload {
+export interface ParsedExcelRow
+  extends Omit<RecordPayload, "responsible_person_id" | "attended_election"> {
   row_number: number;
   display_order: number;
   contact_names: string[];

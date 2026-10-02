@@ -1,7 +1,26 @@
 import { createClient } from "@/lib/supabase/client";
-import type { ContactPerson, FurnitureRecord, Profile } from "@/types/app";
+import { normalizeText } from "@/lib/utils";
+import type {
+  ContactPerson,
+  FurnitureRecord,
+  Profile,
+  ResponsiblePerson,
+} from "@/types/app";
 
 export const UNASSIGNED_CONTACT_FILTER_VALUE = "__unassigned_contact__";
+export const UNASSIGNED_RESPONSIBLE_FILTER_VALUE = "__unassigned_responsible__";
+export const ATTENDED_ELECTION_FILTER_VALUE = "geldi";
+export const NOT_ATTENDED_ELECTION_FILTER_VALUE = "gelmedi";
+
+// Güncel tabloda gösterilmeyen alanlar. Veriler veritabanında korunur;
+// güncel tablo formu bu alanları göndermediği için update_record onları değiştirmez.
+export const CURRENT_TABLE_HIDDEN_FIELDS = [
+  "registration_date",
+  "tax_office_account",
+  "authority_signature",
+  "district",
+  "street",
+] as const;
 
 export const RECORD_SELECT = `
   *,
@@ -57,6 +76,8 @@ export async function fetchAllRecords(includeDeleted = false): Promise<Furniture
       phone_numbers: "",
       gift: record.gift ?? false,
       itso_status: record.itso_status ?? null,
+      responsible_person_id: null,
+      attended_election: false,
       row_color: record.row_color,
       version: record.version,
       created_at: record.updated_at,
@@ -130,6 +151,41 @@ export async function fetchContacts(): Promise<ContactPerson[]> {
   return (fallbackData ?? []) as ContactPerson[];
 }
 
+export async function fetchResponsiblePeople(): Promise<ResponsiblePerson[]> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return [];
+  const { data, error } = await supabase
+    .from("responsible_people")
+    .select("id, display_name, normalized_name, sort_order")
+    .order("sort_order");
+  if (error) throw error;
+  return (data ?? []) as ResponsiblePerson[];
+}
+
+export function findResponsiblePerson(
+  people: ResponsiblePerson[],
+  displayName: string,
+): ResponsiblePerson | undefined {
+  const normalized = normalizeText(displayName);
+  return people.find((person) => normalizeText(person.display_name) === normalized);
+}
+
+export async function addResponsiblePerson(
+  displayName: string,
+  existing: ResponsiblePerson[],
+): Promise<ResponsiblePerson> {
+  const match = findResponsiblePerson(existing, displayName);
+  if (match) return match;
+  const { data, error } = await createClient().rpc("add_responsible_person", {
+    p_display_name: displayName,
+  });
+  if (error) throw error;
+  return data as ResponsiblePerson;
+}
+
 export async function fetchProfile(): Promise<Profile> {
   const {
     data: { user },
@@ -169,5 +225,27 @@ export function recordMatchesContactFilter(
   }
   return record.record_contacts.some((contact) =>
     selectedContactIds.includes(contact.contact_person_id),
+  );
+}
+
+export function recordMatchesResponsibleFilter(
+  record: Pick<FurnitureRecord, "responsible_person_id">,
+  selectedIds: string[],
+): boolean {
+  if (!selectedIds.length) return true;
+  return selectedIds.includes(
+    record.responsible_person_id ?? UNASSIGNED_RESPONSIBLE_FILTER_VALUE,
+  );
+}
+
+export function recordMatchesElectionFilter(
+  record: Pick<FurnitureRecord, "attended_election">,
+  selectedValues: string[],
+): boolean {
+  if (!selectedValues.length) return true;
+  return selectedValues.includes(
+    record.attended_election
+      ? ATTENDED_ELECTION_FILTER_VALUE
+      : NOT_ATTENDED_ELECTION_FILTER_VALUE,
   );
 }

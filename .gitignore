@@ -15,6 +15,7 @@ test-results/
 supabase/.temp/
 .npm-cache/
 .migration-backups/
+supabase/yedek/
 a.txt
 
 # Confidential source documents, exports, and Excel lock files

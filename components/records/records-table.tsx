@@ -34,6 +34,7 @@ import {
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { MultiSelectFilter } from "@/components/filters/multi-select-filter";
@@ -56,9 +57,15 @@ import {
   RIVAL_APPROVED_STATUS,
 } from "@/lib/itso-status";
 import {
+  addResponsiblePerson,
+  ATTENDED_ELECTION_FILTER_VALUE,
   contactsForRecord,
+  NOT_ATTENDED_ELECTION_FILTER_VALUE,
   recordMatchesContactFilter,
+  recordMatchesElectionFilter,
+  recordMatchesResponsibleFilter,
   UNASSIGNED_CONTACT_FILTER_VALUE,
+  UNASSIGNED_RESPONSIBLE_FILTER_VALUE,
 } from "@/lib/records";
 import { createClient } from "@/lib/supabase/client";
 import { normalizeText } from "@/lib/utils";
@@ -66,7 +73,12 @@ import {
   AUTHORIZATION_DOCUMENT_RECEIVED,
   countRecordsByVoteStatus,
 } from "@/lib/vote-status";
-import type { AppRole, ContactPerson, FurnitureRecord } from "@/types/app";
+import type {
+  AppRole,
+  ContactPerson,
+  FurnitureRecord,
+  ResponsiblePerson,
+} from "@/types/app";
 
 const textFilter: FilterFn<FurnitureRecord> = (row, columnId, value) =>
   normalizeText(row.getValue(columnId)).includes(normalizeText(value));
@@ -76,6 +88,35 @@ const multiFilter: FilterFn<FurnitureRecord> = (row, columnId, value: string[]) 
 
 const contactFilter: FilterFn<FurnitureRecord> = (row, _columnId, value: string[]) =>
   recordMatchesContactFilter(row.original, value ?? []);
+
+const responsibleFilter: FilterFn<FurnitureRecord> = (row, _columnId, value: string[]) =>
+  recordMatchesResponsibleFilter(row.original, value ?? []);
+
+const electionFilter: FilterFn<FurnitureRecord> = (row, _columnId, value: string[]) =>
+  recordMatchesElectionFilter(row.original, value ?? []);
+
+// Yalnız filtreleme için kullanılan, tabloda gösterilmeyen sütunlar.
+const FILTER_ONLY_COLUMNS = [
+  "contact_owner",
+  "row_color_filter",
+  "title_type_filter",
+  "responsible_person_filter",
+  "attended_election_filter",
+];
+const filterOnlyVisibility: VisibilityState = Object.fromEntries(
+  FILTER_ONLY_COLUMNS.map((id) => [id, false]),
+);
+
+// Güncel tabloda gösterilmeyen sütunlar; Eski Tablo bunları göstermeye devam eder.
+const CURRENT_TABLE_HIDDEN_COLUMNS = [
+  "registration_date",
+  "tax_office_account",
+  "authority_signature",
+  "district",
+  "street",
+];
+
+const NEW_RESPONSIBLE_OPTION = "__new_responsible__";
 
 function contactAt(record: FurnitureRecord, position: number) {
   return (
@@ -169,6 +210,49 @@ function ColorMenu({
   );
 }
 
+function ResponsiblePersonSelect({
+  record,
+  people,
+  disabled,
+  canAdd,
+  className,
+  onChange,
+  onAdd,
+}: {
+  record: FurnitureRecord;
+  people: ResponsiblePerson[];
+  disabled: boolean;
+  canAdd: boolean;
+  className: string;
+  onChange: (record: FurnitureRecord, personId: string | null) => void;
+  onAdd: (record: FurnitureRecord) => void;
+}) {
+  return (
+    <select
+      value={record.responsible_person_id ?? ""}
+      disabled={disabled}
+      className={className}
+      aria-label={`${record.title} sorumlu kişi`}
+      onClick={(event) => event.stopPropagation()}
+      onChange={(event) => {
+        if (event.target.value === NEW_RESPONSIBLE_OPTION) {
+          onAdd(record);
+          return;
+        }
+        onChange(record, event.target.value || null);
+      }}
+    >
+      <option value="">—</option>
+      {people.map((person) => (
+        <option key={person.id} value={person.id}>
+          {person.display_name}
+        </option>
+      ))}
+      {canAdd && <option value={NEW_RESPONSIBLE_OPTION}>+ Yeni kişi ekle…</option>}
+    </select>
+  );
+}
+
 function SortHeader({ label, column }: { label: string; column: any }) {
   const sorted = column.getIsSorted();
   return (
@@ -211,6 +295,7 @@ function makeColumn(
 export function RecordsTable({
   records,
   contacts,
+  responsiblePeople = [],
   role,
   canExport,
   loading,
@@ -219,14 +304,17 @@ export function RecordsTable({
 }: {
   records: FurnitureRecord[];
   contacts: ContactPerson[];
+  responsiblePeople?: ResponsiblePerson[];
   role: AppRole;
   canExport: boolean;
   loading: boolean;
   onRefresh: () => void;
   legacySnapshotId?: string;
 }) {
+  const queryClient = useQueryClient();
   const editable = role === "admin" || role === "editor";
   const isAnonymous = !canExport;
+  const isCurrentTable = !legacySnapshotId;
   const publicHiddenColumns: VisibilityState = isAnonymous
     ? {
         member_registry_no: false,
@@ -245,6 +333,8 @@ export function RecordsTable({
         street: false,
         registered_address: false,
         phone_numbers: false,
+        responsible_person: false,
+        attended_election: false,
       }
     : {};
   const [globalFilter, setGlobalFilter] = useState("");
@@ -252,9 +342,7 @@ export function RecordsTable({
   const [sorting, setSorting] = useState<SortingState>([{ id: "display_order", desc: false }]);
   const [visibility, setVisibility] = useState<VisibilityState>({
     ...publicHiddenColumns,
-    contact_owner: false,
-    row_color_filter: false,
-    title_type_filter: false,
+    ...filterOnlyVisibility,
   });
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 25 });
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -263,6 +351,12 @@ export function RecordsTable({
   const [coloringId, setColoringId] = useState<string | null>(null);
   const [giftingId, setGiftingId] = useState<string | null>(null);
   const [updatingItsoId, setUpdatingItsoId] = useState<string | null>(null);
+  const [updatingResponsibleId, setUpdatingResponsibleId] = useState<string | null>(null);
+  const [updatingElectionId, setUpdatingElectionId] = useState<string | null>(null);
+  const responsibleNames = useMemo(
+    () => new Map(responsiblePeople.map((person) => [person.id, person.display_name])),
+    [responsiblePeople],
+  );
   const contactColumnCount = useMemo(
     () =>
       Math.max(
@@ -310,9 +404,7 @@ export function RecordsTable({
         setVisibility({
           ...saved.visibility,
           ...publicHiddenColumns,
-          contact_owner: false,
-          row_color_filter: false,
-          title_type_filter: false,
+          ...filterOnlyVisibility,
         });
       }
       if ([25, 50, 100].includes(saved.pageSize ?? 0)) {
@@ -331,7 +423,8 @@ export function RecordsTable({
   }, [visibility, pagination.pageSize]);
 
   const columns = useMemo<ColumnDef<FurnitureRecord>[]>(
-    () => [
+    () => {
+      const allColumns: ColumnDef<FurnitureRecord>[] = [
       makeColumn("display_order", "Sıra", 70),
       makeColumn("member_registry_no", "Üye Sicil No", 115),
       makeColumn("trade_registry_no", "Ticaret Sicil No", 125),
@@ -405,7 +498,51 @@ export function RecordsTable({
         )),
         filterFn: multiFilter,
       },
-      ...Array.from({ length: contactColumnCount }, (_, index) => index + 1).map(
+      ...(isCurrentTable
+        ? [
+            {
+              id: "responsible_person",
+              accessorFn: (record: FurnitureRecord) =>
+                responsibleNames.get(record.responsible_person_id ?? "") ?? "",
+              header: ({ column }) => <SortHeader label="SORUMLU KİŞİ" column={column} />,
+              size: 190,
+              enableColumnFilter: false,
+              cell: ({ row }) => (
+                <ResponsiblePersonSelect
+                  record={row.original}
+                  people={responsiblePeople}
+                  disabled={!editable || updatingResponsibleId === row.original.id}
+                  canAdd={editable}
+                  className="h-8 w-full min-w-36 rounded-md border bg-background px-2 text-xs disabled:cursor-default disabled:opacity-100"
+                  onChange={(record, personId) =>
+                    void changeResponsiblePerson(record, personId)
+                  }
+                  onAdd={(record) => void addResponsibleFromTable(record)}
+                />
+              ),
+            } satisfies ColumnDef<FurnitureRecord>,
+            {
+              ...makeColumn("attended_election", "SEÇİME GELDİ", 110, ({ row }) => (
+                <input
+                  type="checkbox"
+                  checked={Boolean(row.original.attended_election)}
+                  disabled={!editable || updatingElectionId === row.original.id}
+                  className="h-5 w-5 cursor-pointer rounded border accent-primary disabled:cursor-default"
+                  aria-label={`${row.original.title} seçime geldi`}
+                  onClick={(event) => event.stopPropagation()}
+                  onChange={(event) =>
+                    void changeAttendedElection(row.original, event.target.checked)
+                  }
+                />
+              )),
+              enableColumnFilter: false,
+            },
+          ]
+        : []),
+      ...(isCurrentTable
+        ? []
+        : Array.from({ length: contactColumnCount }, (_, index) => index + 1)
+      ).map(
         (position): ColumnDef<FurnitureRecord> => ({
           id: `contact_${position}`,
           accessorFn: (record) => contactAt(record, position),
@@ -437,6 +574,20 @@ export function RecordsTable({
         accessorFn: (record) => record.row_color ?? "",
         header: "Satır rengi",
         filterFn: multiFilter,
+        enableHiding: false,
+      },
+      {
+        id: "responsible_person_filter",
+        accessorFn: (record) => record.responsible_person_id ?? "",
+        header: "Sorumlu kişi",
+        filterFn: responsibleFilter,
+        enableHiding: false,
+      },
+      {
+        id: "attended_election_filter",
+        accessorFn: (record) => record.attended_election,
+        header: "Seçime geldi",
+        filterFn: electionFilter,
         enableHiding: false,
       },
       {
@@ -483,8 +634,26 @@ export function RecordsTable({
           </div>
         ),
       },
+      ];
+      return allColumns.filter(
+        (column) =>
+          !isCurrentTable || !CURRENT_TABLE_HIDDEN_COLUMNS.includes(column.id ?? ""),
+      );
+    },
+    [
+      editable,
+      deletingId,
+      coloringId,
+      giftingId,
+      updatingItsoId,
+      updatingResponsibleId,
+      updatingElectionId,
+      contactColumnCount,
+      legacySnapshotId,
+      isCurrentTable,
+      responsibleNames,
+      responsiblePeople,
     ],
-    [editable, deletingId, coloringId, giftingId, updatingItsoId, contactColumnCount, legacySnapshotId],
   );
 
   const table = useReactTable({
@@ -517,7 +686,26 @@ export function RecordsTable({
       if (!search) return true;
       const record = row.original;
       const haystack = normalizeText(
-        [
+        (isCurrentTable
+          ? [
+              record.display_order,
+              record.member_registry_no,
+              record.trade_registry_no,
+              record.profession_group,
+              record.status,
+              record.title,
+              record.officials,
+              record.origin,
+              record.vote_status,
+              record.gift ? "hediye" : "",
+              record.itso_status,
+              responsibleNames.get(record.responsible_person_id ?? ""),
+              record.attended_election ? "seçime geldi" : "",
+              record.notes,
+              record.registered_address,
+              record.phone_numbers,
+            ]
+          : [
           record.display_order,
           record.member_registry_no,
           record.trade_registry_no,
@@ -538,7 +726,7 @@ export function RecordsTable({
           record.street,
           record.registered_address,
           record.phone_numbers,
-        ].join(" "),
+        ]).join(" "),
       );
       return haystack.includes(search);
     },
@@ -676,6 +864,70 @@ export function RecordsTable({
     onRefresh();
   }
 
+  async function changeResponsiblePerson(
+    record: FurnitureRecord,
+    personId: string | null,
+  ) {
+    if ((record.responsible_person_id ?? null) === personId) return;
+    setUpdatingResponsibleId(record.id);
+    const { error } = await createClient().rpc("set_record_responsible_person", {
+      p_id: record.id,
+      p_expected_version: record.version,
+      p_responsible_person_id: personId,
+    });
+    setUpdatingResponsibleId(null);
+    if (error) {
+      toast.error(
+        error.code === "40001" || error.message.includes("VERSION_CONFLICT")
+          ? "Kayıt başka bir kullanıcı tarafından değiştirildi; liste yenilendi."
+          : `Sorumlu kişi değiştirilemedi: ${error.message}`,
+      );
+      onRefresh();
+      return;
+    }
+    toast.success(personId ? "Sorumlu kişi güncellendi." : "Sorumlu kişi kaldırıldı.");
+    onRefresh();
+  }
+
+  async function addResponsibleFromTable(record: FurnitureRecord) {
+    const name = window.prompt("Yeni sorumlu kişinin adı soyadı:")?.trim();
+    if (!name) return;
+    setUpdatingResponsibleId(record.id);
+    let person: ResponsiblePerson;
+    try {
+      person = await addResponsiblePerson(name, responsiblePeople);
+      await queryClient.invalidateQueries({ queryKey: ["responsible-people"] });
+    } catch {
+      setUpdatingResponsibleId(null);
+      toast.error("Sorumlu kişi eklenemedi.");
+      return;
+    }
+    setUpdatingResponsibleId(null);
+    await changeResponsiblePerson(record, person.id);
+  }
+
+  async function changeAttendedElection(record: FurnitureRecord, attended: boolean) {
+    if (record.attended_election === attended) return;
+    setUpdatingElectionId(record.id);
+    const { error } = await createClient().rpc("set_record_attended_election", {
+      p_id: record.id,
+      p_expected_version: record.version,
+      p_attended: attended,
+    });
+    setUpdatingElectionId(null);
+    if (error) {
+      toast.error(
+        error.code === "40001" || error.message.includes("VERSION_CONFLICT")
+          ? "Kayıt başka bir kullanıcı tarafından değiştirildi; liste yenilendi."
+          : `Seçime geldi durumu değiştirilemedi: ${error.message}`,
+      );
+      onRefresh();
+      return;
+    }
+    toast.success(attended ? "Seçime geldi işaretlendi." : "Seçime geldi işareti kaldırıldı.");
+    onRefresh();
+  }
+
   const filterValue = (id: string) => (table.getColumn(id)?.getFilterValue() as string[]) ?? [];
   const uncertainFilterActive =
     hasSameValues(filterValue("vote_status"), uncertainVoteStatuses) &&
@@ -744,12 +996,14 @@ export function RecordsTable({
           />
         </>
       )}
-      <MultiSelectFilter
-        label="Mahalle"
-        options={optionsFor("district")}
-        value={filterValue("district")}
-        onChange={(value) => table.getColumn("district")?.setFilterValue(value)}
-      />
+      {!isCurrentTable && (
+        <MultiSelectFilter
+          label="Mahalle"
+          options={optionsFor("district")}
+          value={filterValue("district")}
+          onChange={(value) => table.getColumn("district")?.setFilterValue(value)}
+        />
+      )}
       <MultiSelectFilter
         label="İTSO"
         options={[
@@ -759,7 +1013,39 @@ export function RecordsTable({
         value={filterValue("itso_status")}
         onChange={(value) => table.getColumn("itso_status")?.setFilterValue(value)}
       />
-      {!isAnonymous && (
+      {!isAnonymous && isCurrentTable && (
+        <>
+          <MultiSelectFilter
+            label="Sorumlu Kişi"
+            options={[
+              {
+                value: UNASSIGNED_RESPONSIBLE_FILTER_VALUE,
+                label: "Sorumlu atanmamış",
+              },
+              ...responsiblePeople.map((person) => ({
+                value: person.id,
+                label: person.display_name,
+              })),
+            ]}
+            value={filterValue("responsible_person_filter")}
+            onChange={(value) =>
+              table.getColumn("responsible_person_filter")?.setFilterValue(value)
+            }
+          />
+          <MultiSelectFilter
+            label="Seçime Geldi"
+            options={[
+              { value: ATTENDED_ELECTION_FILTER_VALUE, label: "Geldi" },
+              { value: NOT_ATTENDED_ELECTION_FILTER_VALUE, label: "Gelmedi" },
+            ]}
+            value={filterValue("attended_election_filter")}
+            onChange={(value) =>
+              table.getColumn("attended_election_filter")?.setFilterValue(value)
+            }
+          />
+        </>
+      )}
+      {!isAnonymous && !isCurrentTable && (
         <MultiSelectFilter
           label="Temas sorumlusu"
           options={[
@@ -932,11 +1218,7 @@ export function RecordsTable({
                   .filter(
                     (column) =>
                       column.getCanHide() &&
-                      ![
-                        "contact_owner",
-                        "row_color_filter",
-                        "title_type_filter",
-                      ].includes(column.id),
+                      !FILTER_ONLY_COLUMNS.includes(column.id),
                   )
                   .map((column) => (
                     <DropdownMenu.CheckboxItem
@@ -1004,11 +1286,7 @@ export function RecordsTable({
                     {headerGroup.headers
                       .filter(
                         (header) =>
-                          ![
-                            "contact_owner",
-                            "row_color_filter",
-                            "title_type_filter",
-                          ].includes(header.column.id),
+                          !FILTER_ONLY_COLUMNS.includes(header.column.id),
                       )
                       .map((header) => (
                         <th
@@ -1044,11 +1322,7 @@ export function RecordsTable({
                       .getVisibleCells()
                       .filter(
                         (cell) =>
-                          ![
-                            "contact_owner",
-                            "row_color_filter",
-                            "title_type_filter",
-                          ].includes(cell.column.id),
+                          !FILTER_ONLY_COLUMNS.includes(cell.column.id),
                       )
                       .map((cell) => (
                         <td
@@ -1112,10 +1386,47 @@ export function RecordsTable({
                     </Badge>
                   </div>
                   <dl className="mt-4 grid grid-cols-[6rem_1fr] gap-x-2 gap-y-2 text-sm">
-                    <dt className="text-muted-foreground">Mahalle</dt>
-                    <dd>{record.district || "—"}</dd>
-                    <dt className="text-muted-foreground">Temas</dt>
-                    <dd>{recordContacts.join(", ") || "—"}</dd>
+                    {isCurrentTable ? (
+                      !isAnonymous && (
+                        <>
+                          <dt className="text-muted-foreground">Sorumlu</dt>
+                          <dd>
+                            <ResponsiblePersonSelect
+                              record={record}
+                              people={responsiblePeople}
+                              disabled={!editable || updatingResponsibleId === record.id}
+                              canAdd={editable}
+                              className="h-9 w-full rounded-md border bg-background px-2 text-sm disabled:opacity-100"
+                              onChange={(target, personId) =>
+                                void changeResponsiblePerson(target, personId)
+                              }
+                              onAdd={(target) => void addResponsibleFromTable(target)}
+                            />
+                          </dd>
+                          <dt className="text-muted-foreground">Seçime Geldi</dt>
+                          <dd className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(record.attended_election)}
+                              disabled={!editable || updatingElectionId === record.id}
+                              className="h-5 w-5 cursor-pointer rounded border accent-primary disabled:cursor-default"
+                              aria-label={`${record.title} seçime geldi`}
+                              onChange={(event) =>
+                                void changeAttendedElection(record, event.target.checked)
+                              }
+                            />
+                            <span>{record.attended_election ? "Geldi" : "Gelmedi"}</span>
+                          </dd>
+                        </>
+                      )
+                    ) : (
+                      <>
+                        <dt className="text-muted-foreground">Mahalle</dt>
+                        <dd>{record.district || "—"}</dd>
+                        <dt className="text-muted-foreground">Temas</dt>
+                        <dd>{recordContacts.join(", ") || "—"}</dd>
+                      </>
+                    )}
                     <dt className="text-muted-foreground">Telefon</dt>
                     <dd className="whitespace-pre-wrap break-words">
                       {record.phone_numbers || "—"}
@@ -1176,7 +1487,7 @@ export function RecordsTable({
                         <dd className="break-words">{record.origin || "—"}</dd>
                         <dt className="text-muted-foreground">Oy Durumu</dt>
                         <dd className="break-words">{record.vote_status || "—"}</dd>
-                        {recordContactEntries.map((contact) => (
+                        {!isCurrentTable && recordContactEntries.map((contact) => (
                           <div key={`${record.id}-${contact.position}`} className="contents">
                             <dt className="text-muted-foreground">
                               TEMAS {contact.position}
@@ -1188,8 +1499,12 @@ export function RecordsTable({
                         <dd className="whitespace-pre-wrap break-words">
                           {record.notes || "—"}
                         </dd>
-                        <dt className="text-muted-foreground">Cadde</dt>
-                        <dd className="break-words">{record.street || "—"}</dd>
+                        {!isCurrentTable && (
+                          <>
+                            <dt className="text-muted-foreground">Cadde</dt>
+                            <dd className="break-words">{record.street || "—"}</dd>
+                          </>
+                        )}
                         <dt className="text-muted-foreground">Tescil Adresi</dt>
                         <dd className="whitespace-pre-wrap break-words">
                           {record.registered_address || "—"}
@@ -1272,6 +1587,7 @@ export function RecordsTable({
         onOpenChange={setDialogOpen}
         record={selected}
         contacts={contacts}
+        responsiblePeople={responsiblePeople}
         role={role}
         legacySnapshotId={legacySnapshotId}
       />

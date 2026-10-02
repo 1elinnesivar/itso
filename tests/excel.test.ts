@@ -30,6 +30,8 @@ const record: FurnitureRecord = {
   phone_numbers: "0555 000 00 00\n0224 000 00 00",
   gift: true,
   itso_status: "ONAYLANDI",
+  responsible_person_id: null,
+  attended_election: false,
   row_color: "yellow",
   version: 1,
   created_at: "2026-01-01T00:00:00Z",

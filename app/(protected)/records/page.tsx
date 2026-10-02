@@ -6,8 +6,12 @@ import { Button } from "@/components/ui/button";
 import { useRecords } from "@/hooks/use-records";
 
 export default function RecordsPage() {
-  const { records, contacts, profile } = useRecords();
-  const loading = records.isLoading || contacts.isLoading || profile.isLoading;
+  const { records, contacts, profile, responsiblePeople } = useRecords();
+  const loading =
+    records.isLoading ||
+    contacts.isLoading ||
+    profile.isLoading ||
+    responsiblePeople.isLoading;
 
   if (loading) {
     return (
@@ -17,7 +21,7 @@ export default function RecordsPage() {
       </div>
     );
   }
-  if (records.error || contacts.error || profile.error) {
+  if (records.error || contacts.error || profile.error || responsiblePeople.error) {
     return (
       <div className="mx-auto mt-20 max-w-lg rounded-lg border p-8 text-center">
         <AlertCircle className="mx-auto mb-3 h-8 w-8 text-destructive" />
@@ -41,6 +45,7 @@ export default function RecordsPage() {
       <RecordsTable
         records={records.data ?? []}
         contacts={contacts.data ?? []}
+        responsiblePeople={responsiblePeople.data ?? []}
         role={profile.data!.role}
         canExport={profile.data!.id !== "anonymous"}
         loading={records.isFetching}

@@ -11,6 +11,13 @@ export interface ContactPerson {
   outreach_urgent_by?: string | null;
 }
 
+export interface ResponsiblePerson {
+  id: string;
+  display_name: string;
+  normalized_name: string;
+  sort_order: number;
+}
+
 export interface RecordContact {
   position: number;
   contact_person_id: string;
@@ -38,6 +45,8 @@ export interface FurnitureRecord {
   phone_numbers: string;
   gift: boolean;
   itso_status: string | null;
+  responsible_person_id: string | null;
+  attended_election: boolean;
   row_color: RowColor;
   version: number;
   created_at: string;

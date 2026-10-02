@@ -24,6 +24,8 @@ export const recordSchema = z.object({
   phone_numbers: z.string().transform((value) => value.replace(/\r\n?/g, "\n").trim()),
   gift: z.boolean(),
   itso_status: optionalText,
+  responsible_person_id: optionalText,
+  attended_election: z.boolean(),
 });
 
 export type RecordFormValues = z.input<typeof recordSchema>;

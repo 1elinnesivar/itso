@@ -56,6 +56,8 @@ export async function fetchLegacyRecords(
         registration_date: row.record_data.registration_date ?? null,
         tax_office_account: row.record_data.tax_office_account ?? null,
         authority_signature: row.record_data.authority_signature ?? null,
+        responsible_person_id: row.record_data.responsible_person_id ?? null,
+        attended_election: row.record_data.attended_election ?? false,
         record_contacts: contacts.sort((left, right) => left.position - right.position),
       };
     })

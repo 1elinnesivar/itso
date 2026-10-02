@@ -3,13 +3,22 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { fetchAllRecords, fetchContacts, fetchProfile } from "@/lib/records";
+import {
+  fetchAllRecords,
+  fetchContacts,
+  fetchProfile,
+  fetchResponsiblePeople,
+} from "@/lib/records";
 
 export function useRecords() {
   const queryClient = useQueryClient();
   const records = useQuery({ queryKey: ["records"], queryFn: () => fetchAllRecords(false) });
   const contacts = useQuery({ queryKey: ["contacts"], queryFn: fetchContacts });
   const profile = useQuery({ queryKey: ["profile"], queryFn: fetchProfile });
+  const responsiblePeople = useQuery({
+    queryKey: ["responsible-people"],
+    queryFn: fetchResponsiblePeople,
+  });
 
   useEffect(() => {
     const supabase = createClient();
@@ -28,6 +37,13 @@ export function useRecords() {
         void queryClient.invalidateQueries({ queryKey: ["contacts"] });
         refreshRecords();
       })
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "responsible_people" },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["responsible-people"] });
+        },
+      )
       .subscribe((status) => {
         if (status === "SUBSCRIBED") refreshRecords();
       });
@@ -42,5 +58,5 @@ export function useRecords() {
     };
   }, [queryClient]);
 
-  return { records, contacts, profile };
+  return { records, contacts, profile, responsiblePeople };
 }

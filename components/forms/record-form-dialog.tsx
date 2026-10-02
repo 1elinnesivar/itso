@@ -17,6 +17,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ITSO_STATUS_OPTIONS } from "@/lib/itso-status";
+import {
+  addResponsiblePerson,
+  CURRENT_TABLE_HIDDEN_FIELDS,
+} from "@/lib/records";
 import { createClient } from "@/lib/supabase/client";
 import {
   recordSchema,
@@ -24,7 +28,12 @@ import {
   type RecordParsedValues,
 } from "@/lib/validation/record";
 import { VOTE_STATUS_OPTIONS } from "@/lib/vote-status";
-import type { AppRole, ContactPerson, FurnitureRecord } from "@/types/app";
+import type {
+  AppRole,
+  ContactPerson,
+  FurnitureRecord,
+  ResponsiblePerson,
+} from "@/types/app";
 
 const emptyValues: RecordFormValues = {
   member_registry_no: "",
@@ -45,6 +54,8 @@ const emptyValues: RecordFormValues = {
   phone_numbers: "",
   gift: false,
   itso_status: "",
+  responsible_person_id: "",
+  attended_election: false,
 };
 
 function valuesFromRecord(record: FurnitureRecord): RecordFormValues {
@@ -67,6 +78,8 @@ function valuesFromRecord(record: FurnitureRecord): RecordFormValues {
     phone_numbers: record.phone_numbers,
     gift: record.gift ?? false,
     itso_status: record.itso_status ?? "",
+    responsible_person_id: record.responsible_person_id ?? "",
+    attended_election: record.attended_election ?? false,
   };
 }
 
@@ -222,6 +235,7 @@ export function RecordFormDialog({
   onOpenChange,
   record,
   contacts,
+  responsiblePeople = [],
   role,
   legacySnapshotId,
 }: {
@@ -229,10 +243,18 @@ export function RecordFormDialog({
   onOpenChange: (open: boolean) => void;
   record: FurnitureRecord | null;
   contacts: ContactPerson[];
+  responsiblePeople?: ResponsiblePerson[];
   role: AppRole;
   legacySnapshotId?: string;
 }) {
   const editable = role === "admin" || role === "editor";
+  const isCurrentTable = !legacySnapshotId;
+  const visibleTextFields = isCurrentTable
+    ? textFields.filter(
+        (field) =>
+          !(CURRENT_TABLE_HIDDEN_FIELDS as readonly string[]).includes(field.name),
+      )
+    : textFields;
   const queryClient = useQueryClient();
   const [contactIds, setContactIds] = useState<string[]>([]);
   const [contactSlotCount, setContactSlotCount] = useState(4);
@@ -241,6 +263,8 @@ export function RecordFormDialog({
   const [editingContact, setEditingContact] = useState<ContactPerson | null>(null);
   const [editingContactName, setEditingContactName] = useState("");
   const [renamingContact, setRenamingContact] = useState(false);
+  const [newResponsible, setNewResponsible] = useState("");
+  const [addingResponsible, setAddingResponsible] = useState(false);
   const [initialVersion, setInitialVersion] = useState<number | null>(null);
   const [conflict, setConflict] = useState(false);
   const form = useForm<RecordFormValues, unknown, RecordParsedValues>({
@@ -290,6 +314,21 @@ export function RecordFormDialog({
     setNewContact("");
   }
 
+  async function addResponsible() {
+    if (!newResponsible.trim()) return;
+    setAddingResponsible(true);
+    try {
+      const person = await addResponsiblePerson(newResponsible, responsiblePeople);
+      await queryClient.invalidateQueries({ queryKey: ["responsible-people"] });
+      form.setValue("responsible_person_id", person.id, { shouldDirty: true });
+      setNewResponsible("");
+    } catch {
+      toast.error("Sorumlu kişi eklenemedi.");
+    } finally {
+      setAddingResponsible(false);
+    }
+  }
+
   function openContactEditor(contact: ContactPerson) {
     setEditingContact(contact);
     setEditingContactName(contact.display_name);
@@ -332,11 +371,16 @@ export function RecordFormDialog({
 
   async function save(values: RecordParsedValues) {
     if (!editable) return;
-    if (new Set(contactIds).size !== contactIds.length) {
+    if (!isCurrentTable && new Set(contactIds).size !== contactIds.length) {
       toast.error("Aynı temas sorumlusu birden fazla seçilemez.");
       return;
     }
-    const payload = values;
+    // Güncel tabloda gizlenen alanlar ve temaslar gönderilmez; veritabanı
+    // mevcut değerleri korur.
+    const payload: Partial<RecordParsedValues> = { ...values };
+    if (isCurrentTable) {
+      CURRENT_TABLE_HIDDEN_FIELDS.forEach((field) => delete payload[field]);
+    }
     const supabase = createClient();
     const response = legacySnapshotId
       ? record
@@ -357,11 +401,11 @@ export function RecordFormDialog({
             p_id: record.id,
             p_expected_version: initialVersion,
             p_payload: payload,
-            p_contact_ids: contactIds,
+            p_contact_ids: null,
           })
         : await supabase.rpc("create_record", {
             p_payload: payload,
-            p_contact_ids: contactIds,
+            p_contact_ids: [],
           });
 
     if (response.error) {
@@ -406,7 +450,7 @@ export function RecordFormDialog({
         )}
         <form className="space-y-5" onSubmit={form.handleSubmit(save)}>
           <fieldset disabled={!editable} className="grid gap-4 sm:grid-cols-2">
-            {textFields.map((field) => (
+            {visibleTextFields.map((field) => (
               <label
                 key={field.name}
                 className={`space-y-1.5 text-sm font-medium ${field.full ? "sm:col-span-2" : ""}`}
@@ -467,6 +511,59 @@ export function RecordFormDialog({
                 ))}
               </select>
             </label>
+            {isCurrentTable && (
+              <>
+                <div className="space-y-2 sm:col-span-2">
+                  <label className="block space-y-1.5 text-sm font-medium">
+                    Sorumlu Kişi
+                    <select
+                      className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                      {...form.register("responsible_person_id")}
+                    >
+                      <option value="">Seçiniz</option>
+                      {responsiblePeople.map((person) => (
+                        <option key={person.id} value={person.id}>
+                          {person.display_name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {editable && (
+                    <div className="flex gap-2">
+                      <Input
+                        value={newResponsible}
+                        onChange={(event) => setNewResponsible(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            void addResponsible();
+                          }
+                        }}
+                        placeholder="Yeni sorumlu kişi"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => void addResponsible()}
+                        disabled={addingResponsible}
+                      >
+                        {addingResponsible ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                        Ekle
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md border bg-background px-3 text-sm font-medium sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5 rounded border accent-primary"
+                    {...form.register("attended_election")}
+                  />
+                  Seçime Geldi
+                </label>
+              </>
+            )}
+            {!isCurrentTable && (
             <div className="space-y-2 sm:col-span-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-medium">Temas sorumluları</p>
@@ -515,6 +612,7 @@ export function RecordFormDialog({
                 </div>
               )}
             </div>
+            )}
           </fieldset>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
