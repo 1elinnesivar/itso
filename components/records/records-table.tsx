@@ -428,10 +428,6 @@ export function RecordsTable({
     () => countRecordsByItsoStatus(records, RIVAL_APPROVED_STATUS),
     [records],
   );
-  const attendedElectionCount = useMemo(
-    () => records.filter((record) => record.attended_election).length,
-    [records],
-  );
 
   useEffect(() => {
     const raw = localStorage.getItem("records-table-preferences");
@@ -992,6 +988,10 @@ export function RecordsTable({
   }
 
   const filteredRecords = table.getFilteredRowModel().rows.map((row) => row.original);
+  // Seçime geldi sayaçları uygulanan filtre ve aramaya göre hesaplanır.
+  const attendedElectionCount = filteredRecords.filter(
+    (record) => record.attended_election,
+  ).length;
   const sortedFilteredRecords = table.getSortedRowModel().rows.map((row) => row.original);
 
   const hasActiveFilters = columnFilters.length > 0 || Boolean(globalFilter);
@@ -1243,7 +1243,7 @@ export function RecordsTable({
                   Seçime Gelmedi
                 </span>
                 <span className="ml-1 shrink-0 text-sm font-bold tabular-nums text-zinc-700">
-                  {records.length - attendedElectionCount}
+                  {filteredRecords.length - attendedElectionCount}
                 </span>
               </div>
             </>
