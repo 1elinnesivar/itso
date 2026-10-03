@@ -818,7 +818,7 @@ export function RecordsTable({
           p_field: "row_color",
           p_value: color,
         })
-      : await createClient().rpc("set_record_color", {
+      : await createClient().rpc("set_record_row_color", {
           p_id: record.id,
           p_expected_version: record.version,
           p_row_color: color,
@@ -945,7 +945,7 @@ export function RecordsTable({
   async function changeAttendedElection(record: FurnitureRecord, attended: boolean) {
     if (record.attended_election === attended) return;
     setUpdatingElectionId(record.id);
-    const { error } = await createClient().rpc("set_record_attended_election", {
+    const { error } = await createClient().rpc("set_record_election_attendance", {
       p_id: record.id,
       p_expected_version: record.version,
       p_attended: attended,

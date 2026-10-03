@@ -21,12 +21,25 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     );
   }
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("id, display_name, role")
     .eq("id", user.id)
     .single();
-  if (!data) redirect("/login");
+  // Profil hiç yoksa girişe dön. Geçici bir veritabanı hatasında /login ile
+  // /records arasında yönlendirme döngüsüne girmemek için sayfayı göster;
+  // sayfa kendi hata ve "Yeniden dene" ekranını kullanır.
+  if (!data && error?.code === "PGRST116") redirect("/login");
+  if (!data) {
+    return (
+      <AppShell
+        profile={{ id: user.id, display_name: user.email ?? "", role: "viewer" }}
+        email={user.email ?? ""}
+      >
+        {children}
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell profile={data as Profile} email={user.email ?? ""}>
