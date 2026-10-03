@@ -428,6 +428,10 @@ export function RecordsTable({
     () => countRecordsByItsoStatus(records, RIVAL_APPROVED_STATUS),
     [records],
   );
+  const attendedElectionCount = useMemo(
+    () => records.filter((record) => record.attended_election).length,
+    [records],
+  );
 
   useEffect(() => {
     const raw = localStorage.getItem("records-table-preferences");
@@ -1222,6 +1226,28 @@ export function RecordsTable({
               {rivalApprovedCount}
             </span>
           </div>
+          {isCurrentTable && !isAnonymous && (
+            <>
+              <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-600" />
+                <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
+                  Seçime Geldi
+                </span>
+                <span className="ml-1 shrink-0 text-sm font-bold tabular-nums text-emerald-700">
+                  {attendedElectionCount}
+                </span>
+              </div>
+              <div className="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 shadow-sm">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-zinc-400" />
+                <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
+                  Seçime Gelmedi
+                </span>
+                <span className="ml-1 shrink-0 text-sm font-bold tabular-nums text-zinc-700">
+                  {records.length - attendedElectionCount}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="space-y-2">
